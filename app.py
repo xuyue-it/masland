@@ -63,7 +63,7 @@ def send_email(subject, content, to_email):
         return False, str(e_tls)
 
 # ========================
-# 数据库初始化（含自动补列，兼容旧库）
+# 数据库初始化（含自动补列 + 持久 WAL 模式）
 # ========================
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -92,13 +92,20 @@ def init_db():
         status TEXT DEFAULT '待审核',
         review_comment TEXT
     )''')
-    # 自动补列 review_comment（旧库兼容）
+
+    # —— 永久设置 WAL & 同步策略（更抗丢）——
+    try:
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("PRAGMA synchronous=NORMAL")
+    except Exception:
+        pass
+
+    # —— 兼容旧库：补列 review_comment ——
     try:
         c.execute("PRAGMA table_info(submissions)")
         cols = [row[1] for row in c.fetchall()]
         if "review_comment" not in cols:
             c.execute("ALTER TABLE submissions ADD COLUMN review_comment TEXT")
-            conn.commit()
     except Exception:
         pass
 
@@ -106,6 +113,17 @@ def init_db():
     conn.close()
 
 init_db()
+
+# ========================
+# 禁止缓存（确保每次加载 /admin 都取数据库最新）
+# ========================
+@app.after_request
+def add_no_cache_headers(resp):
+    if request.path in ("/", "/admin"):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+    return resp
 
 # ========================
 # 登录保护
@@ -190,7 +208,7 @@ def admin():
 @app.route("/api/submission/<int:submission_id>")
 @login_required
 def api_submission(submission_id):
-    """新增：读取单条记录的最新状态，供前端在更新后再次拉取，确保显示数据库里的最终值。"""
+    """读取单条记录的最新状态，供前端在更新后再次拉取，确保显示数据库里的最终值。"""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""SELECT id, name, email, event_name, status, review_comment
@@ -224,11 +242,15 @@ def update_status(submission_id, new_status):
         c.execute("UPDATE submissions SET status=?, review_comment=? WHERE id=?",
                   (new_status, comment, submission_id))
         conn.commit()
+        affected = c.rowcount
         c.execute("SELECT name, email, status FROM submissions WHERE id=?", (submission_id,))
         row = c.fetchone()
         conn.close()
 
-        # 发邮件通知申请人（可选失败）
+        if affected == 0:
+            return jsonify({"success": False, "message": "未找到要更新的记录"}), 404
+
+        # 发邮件通知申请人（可失败但不影响接口）
         try:
             if row and row[1]:
                 send_email("【审核结果】福源堂器材外借申请",
@@ -266,7 +288,7 @@ def send_review_email(submission_id):
         return jsonify({"success": False, "message": "该记录没有填写邮箱，无法发送"}), 400
 
     ok, err = send_email(f"【审核结果】{event_name or ''}",
-                         f"您好 {name or ''}：\n\n您的申请（活动：{event_name or '-'}）审核结果为：{status or '待审核'}\n审核说明：{review_comment or '无'}\n\n如有疑问请回复此邮件联系管理员。",
+                         f"您好 {name or ''}：\n\n您的申请（活动：{event_name or '-'}) 审核结果为：{status or '待审核'}\n审核说明：{review_comment or '无'}\n\n如有疑问请回复此邮件联系管理员。",
                          email)
     if ok:
         return jsonify({"success": True, "message": f"已发送到 {email}"})
