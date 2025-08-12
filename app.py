@@ -10,6 +10,7 @@ from email.utils import formataddr
 import traceback
 import os
 from functools import wraps
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -17,7 +18,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-# ========== 邮件配置 ==========
+# ========== 邮件配置（记得用应用专用密码）==========
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))
 SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
@@ -174,7 +175,7 @@ def submit():
     return "提交成功！我们会尽快处理您的申请。"
 
 # ========================
-# 管理页
+# 管理页 + 接口
 # ========================
 @app.route("/admin")
 @login_required
@@ -186,12 +187,34 @@ def admin():
     conn.close()
     return render_template("admin.html", submissions=submissions)
 
+@app.route("/api/submission/<int:submission_id>")
+@login_required
+def api_submission(submission_id):
+    """新增：读取单条记录的最新状态，供前端在更新后再次拉取，确保显示数据库里的最终值。"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""SELECT id, name, email, event_name, status, review_comment
+                 FROM submissions WHERE id=?""", (submission_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"success": False, "message": "记录不存在"}), 404
+    return jsonify({
+        "success": True,
+        "data": {
+            "id": row[0],
+            "name": row[1],
+            "email": row[2],
+            "event_name": row[3],
+            "status": row[4] or "待审核",
+            "review_comment": row[5] or ""
+        }
+    })
+
 @app.route("/update_status/<int:submission_id>/<string:new_status>", methods=["POST"])
 @login_required
 def update_status(submission_id, new_status):
-    """
-    加强版：任何异常都返回 JSON，不会让前端进入 fetch 的 catch。
-    """
+    """异常也返回 JSON，且更新后尝试给申请人发邮件（失败不影响接口）"""
     try:
         data = request.get_json(silent=True) or {}
         comment = data.get("comment", "")
@@ -205,15 +228,14 @@ def update_status(submission_id, new_status):
         row = c.fetchone()
         conn.close()
 
-        # 审核后，自动发邮件给申请人（若有邮箱）；失败不影响接口返回
+        # 发邮件通知申请人（可选失败）
         try:
             if row and row[1]:
                 send_email("【审核结果】福源堂器材外借申请",
                            f"您好 {row[0]}，您的申请已被审核为：{row[2]}\n审核说明：{comment or '无'}",
                            row[1])
         except Exception as mail_err:
-            print("⚠️ 审核后通知申请人失败（已忽略，不影响接口）：", mail_err)
-            print(traceback.format_exc())
+            print("⚠️ 审核后通知申请人失败（忽略）：", mail_err)
 
         return jsonify({
             "success": True,
