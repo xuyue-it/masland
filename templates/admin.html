@@ -5,55 +5,67 @@
 <title>管理审核 - 福源堂器材外借</title>
 <style>
   :root{
-    --bg:#f5f7fb;
-    --card:#ffffff;
-    --line:#e8ecf2;
-    --text:#111827;
-    --muted:#6b7280;
-    --primary:#2563eb;
-    --primary-600:#1d4ed8;
-    --green:#22c55e;
-    --green-600:#16a34a;
-    --red:#ef4444;
-    --red-600:#dc2626;
-    --amber:#f59e0b;
-    --amber-600:#d97706;
-    --indigo:#6366f1;
-    --indigo-600:#4f46e5;
+    --bg:#f5f7fb; --card:#ffffff; --line:#e8ecf2; --text:#111827; --muted:#6b7280;
+    --primary:#2563eb; --primary-600:#1d4ed8;
+    --green:#22c55e; --green-600:#16a34a;
+    --red:#ef4444; --red-600:#dc2626;
+    --amber:#f59e0b; --amber-600:#d97706;
+    --indigo:#6366f1; --indigo-600:#4f46e5;
   }
   *{ box-sizing: border-box; }
   body { font-family: "Microsoft YaHei", sans-serif; background:var(--bg); padding:24px; color:var(--text); }
-  .wrap { max-width: 1400px; margin: 0 auto; }
+  .wrap { max-width: 100%; margin: 0 auto; }
+
   .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
   h1 { margin:0; font-size:24px; }
-  .topbar-actions a, .topbar-actions button{
+  .topbar-actions a{
     display:inline-block; text-decoration:none; cursor:pointer;
     padding:8px 12px; border-radius:10px; border:1px solid var(--line);
     background:var(--card); color:var(--text); margin-left:8px;
   }
-  .topbar-actions a:hover, .topbar-actions button:hover{ background:#f9fafb; }
+  .topbar-actions a:hover{ background:#f9fafb; }
 
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 6px 18px rgba(17,24,39,.05); }
+  /* 横向滚动容器 */
+  .scroll-x {
+    width: 100%;
+    overflow-x: auto;         /* 允许左右滚动 */
+    overflow-y: hidden;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--card);
+    box-shadow:0 6px 18px rgba(17,24,39,.05);
+  }
 
-  table { width:100%; border-collapse: separate; border-spacing:0; }
+  table { border-collapse: separate; border-spacing:0; white-space: nowrap; } /* 全表不换行 */
   thead th{
     position:sticky; top:0; background:#f3f4f6; z-index:1;
     font-weight:700; font-size:14px; text-align:left; padding:14px 12px; border-bottom:1px solid var(--line);
   }
   tbody td{
     font-size:15px; padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top;
+    max-width: 400px; overflow:hidden; text-overflow: ellipsis;  /* 单行显示省略（保证一行不“直排”） */
   }
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
+
+  /* 仅“器材”允许多行（逗号+换行），其他字段保持横向一行 */
+  .td-equipment {
+    white-space: normal;           /* 允许换行 */
+    max-width: 260px;              /* 保持整齐 */
+    line-height: 1.5;
+  }
+  .td-equipment .eq-line {
+    display:block;
+  }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
   .badge-pending { background:#fff7e6; border-color:#ffcc80; }
   .badge-approved { background:#e8f5e9; border-color:#a5d6a7; }
   .badge-rejected { background:#ffebee; border-color:#ef9a9a; }
 
-  .actions { min-width: 270px; }
-  .actions .stack { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-  .comment-input { width: 100%; min-width:180px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
+  .actions { min-width: 420px; }           /* 操作栏更宽，保持一行 */
+  .stack { display:flex; gap:8px; align-items:center; }
+  .comment-input { width: 220px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
 
   /* 按钮统一风格 */
   .btn{
@@ -83,13 +95,12 @@
     <div class="topbar">
       <h1>管理审核</h1>
       <div class="topbar-actions">
-        <a class="link" href="/" target="_self">返回首页</a>
-        <!-- 新增：退出按钮 -->
-        <a class="link" href="/logout" target="_self">退出登录</a>
+        <a href="/" target="_self">返回首页</a>
+        <a href="/logout" target="_self">退出登录</a>
       </div>
     </div>
 
-    <div class="card">
+    <div class="scroll-x">
       <table>
         <thead>
           <tr>
@@ -97,32 +108,32 @@
             <th>姓名</th>
             <th>电话</th>
             <th>邮箱</th>
-            <th>团契</th>
+            <th>团体名称</th>
             <th>活动名称</th>
-            <th>开始时间</th>
-            <th>结束时间</th>
+            <th>开始</th>
+            <th>结束</th>
             <th>地点</th>
             <th>性质</th>
             <th>人数</th>
             <th>器材</th>
             <th>特别需求</th>
-            <th>奉献</th>
+            <th>捐款</th>
             <th>方式</th>
             <th>备注</th>
             <th>紧急联系人</th>
             <th>紧急电话</th>
-            <th>状态</th>
+            <th>状态（含审核说明）</th>
             <th>操作</th>
             <th>导出</th>
             <th>发送邮件</th>
-            <th>删除</th> <!-- 新增列 -->
+            <th>删除</th>
           </tr>
         </thead>
         <tbody>
           {% for s in submissions %}
           <tr id="row-{{ s[0] }}">
             <td>{{ s[0] }}</td>
-            <td class="name-cell">{{ s[1] }}</td>
+            <td>{{ s[1] }}</td>
             <td>{{ s[2] }}</td>
             <td>{{ s[3] }}</td>
             <td>{{ s[4] }}</td>
@@ -132,20 +143,35 @@
             <td>{{ s[10] }}</td>
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
-            <td>{{ s[13] }}</td>
+
+            <!-- 器材：逗号 + 换行（只此列允许多行） -->
+            <td class="td-equipment">
+              {% set eq_items = (s[13] or '')|split(',') %}
+              {% for it in eq_items %}
+                {% set t = it.strip() %}
+                {% if t %}
+                  <span class="eq-line">{{ t }}{% if not loop.last %},{% endif %}</span>
+                {% endif %}
+              {% endfor %}
+            </td>
+
             <td>{{ s[14] }}</td>
             <td>{{ s[15] }}</td>
             <td>{{ s[16] }}</td>
             <td>{{ s[17] }}</td>
             <td>{{ s[18] }}</td>
             <td>{{ s[19] }}</td>
-            <td class="status-cell">
-              {% set st = s[21] or '' %}
+
+            <!-- 状态与审核说明放在同一格，仍保持单行展示（用分隔符） -->
+            <td class="status-cell" title="审核说明：{{ s[22] or '' }}">
+              {% set st = s[21] or '待审核' %}
               <span class="badge
                 {% if '待' in st %}badge-pending{% elif '通' in st %}badge-approved{% elif '拒' in st %}badge-rejected{% endif %}
-              ">{{ st or '待审核' }}</span>
-              <div class="muted">{% if s[22] %}备注：{{ s[22] }}{% endif %}</div>
+              ">{{ st }}</span>
+              {% if s[22] %} | <span class="muted">说明：{{ s[22] }}</span>{% endif %}
             </td>
+
+            <!-- 操作：统一一行 -->
             <td class="actions">
               <div class="stack">
                 <input type="text" id="comment-{{ s[0] }}" class="comment-input" placeholder="审核说明">
@@ -153,6 +179,7 @@
                 <button class="btn btn-reject" onclick="updateStatus({{ s[0] }}, '不通过')">不通过</button>
               </div>
             </td>
+
             <td><a class="link" href="/download/{{ s[0] }}" target="_blank">Word</a></td>
             <td><button class="btn btn-mail" onclick="sendReviewEmail({{ s[0] }})">发送邮件</button></td>
             <td><button class="btn btn-delete" onclick="deleteSubmission({{ s[0] }})">删除</button></td>
@@ -177,7 +204,6 @@ function updateStatus(id, statusText) {
     .then(d => {
       if (!d.success) { alert(d.message || "更新失败"); return; }
 
-      // 更新状态徽章
       const row = document.getElementById(`row-${id}`);
       const cell = row && row.querySelector('.status-cell');
       if (cell) {
@@ -210,7 +236,6 @@ function sendReviewEmail(id) {
     });
 }
 
-// 新增：删除记录
 function deleteSubmission(id){
   if (!confirm(`确认删除编号 ${id} 这条记录吗？此操作不可撤销。`)) return;
   fetch(`/delete_submission/${id}`, { method: "POST" })
