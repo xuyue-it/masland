@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, session
 import sqlite3
 from docx import Document
 # ---- 发邮件相关 ----
@@ -8,16 +8,28 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
 import traceback
+import os
+from functools import wraps
 
 app = Flask(__name__)
 
+# ========== 基本配置 ==========
+# session 密钥（用于登录状态），建议在 Render 环境变量里设置 SECRET_KEY
+app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
+
+# 管理员登录密码（默认 admin123；建议在 Render 环境变量设置 ADMIN_PASSWORD）
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "maslandit339188")
+
 # ========== 邮件配置（改成你自己的） ==========
-SMTP_SERVER = "smtp.gmail.com"          # QQ邮箱可改成 "smtp.qq.com"
-SMTP_PORT   = 587                       # Gmail TLS 端口 587（函数里会优先尝试 SSL 465）
-SENDER_EMAIL    = "qinmo840@gmail.com"  # 发件邮箱 —— 改成你的
-SENDER_PASSWORD = "smmfrxexfqsrldik" # 应用专用密码/授权码 —— 改成你的
-ADMIN_EMAIL     = "lausukyork9@gmail.com"  # 管理员接收通知邮箱 —— 改成你的
-# ===========================================
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")         # QQ邮箱可改成 "smtp.qq.com"
+SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))                 # Gmail TLS 端口 587（函数里会优先尝试 SSL 465）
+SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")   # 发件邮箱 —— 改成你的
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "clcinsfvvlafukef")  # 应用专用密码/授权码 —— 改成你的（建议无空格）
+ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com") # 管理员接收通知邮箱 —— 改成你的
+
+# ========== （可选）数据库持久化路径 ==========
+# 如在 Render 绑定了磁盘，可在环境变量设置 DB_PATH=/var/data/database.db
+DB_PATH = os.getenv("DB_PATH", "database.db")
 
 # ===== 稳健版邮件发送函数（返回 (ok, err)）=====
 def send_email(subject, content, to_email):
@@ -63,7 +75,7 @@ def send_email(subject, content, to_email):
 # 数据库初始化
 # ========================
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS submissions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,6 +107,39 @@ def init_db():
 init_db()
 
 # ========================
+# 登录保护装饰器
+# ========================
+def login_required(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login", next=request.path))
+        return view_func(*args, **kwargs)
+    return wrapper
+
+# ========================
+# 登录/登出
+# ========================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == ADMIN_PASSWORD:
+            session["logged_in"] = True
+            # 登录后跳回到 next（默认去 /admin）
+            next_url = request.args.get("next") or url_for("admin")
+            return redirect(next_url)
+        else:
+            error = "密码错误，请重试。"
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    session.pop("logged_in", None)
+    return redirect(url_for("login"))
+
+# ========================
 # 前台页面
 # ========================
 @app.route("/")
@@ -108,7 +153,7 @@ def submit():
     checklist = request.form.getlist("equipment")
     equipment_str = ", ".join(checklist) if checklist else ""
 
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
         INSERT INTO submissions (
@@ -151,16 +196,15 @@ def submit():
     if not ok:
         print("❌ 提交后通知管理员失败：", err)
 
-    return ("提交成功！我们会尽快处理您的申请。"
-            "请您及时查看邮箱，我们会以邮箱的方式通知您审核结果。")
-
+    return "提交成功！我们会尽快处理您的申请。"
 
 # ========================
-# 管理员页面
+# 管理员页面（增加登录保护）
 # ========================
 @app.route("/admin")
+@login_required
 def admin():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM submissions ORDER BY id DESC")
     submissions = c.fetchall()
@@ -169,11 +213,12 @@ def admin():
 
 # 审核并保存（审核后自发邮件给申请人）
 @app.route("/update_status/<int:submission_id>/<string:new_status>", methods=["POST"])
+@login_required
 def update_status(submission_id, new_status):
     data = request.get_json(silent=True) or {}
     comment = data.get("comment", "")
 
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE submissions SET status=?, review_comment=? WHERE id=?", (new_status, comment, submission_id))
     conn.commit()
@@ -200,8 +245,9 @@ def update_status(submission_id, new_status):
 
 # 单独发送：将当前数据库中的状态+审核说明发送给该条记录的邮箱
 @app.route("/send_review_email/<int:submission_id>", methods=["POST"])
+@login_required
 def send_review_email(submission_id):
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT name, email, event_name, status, review_comment FROM submissions WHERE id=?", (submission_id,))
     row = c.fetchone()
@@ -227,8 +273,9 @@ def send_review_email(submission_id):
 # 导出 Word
 # ========================
 @app.route("/download/<int:submission_id>")
+@login_required
 def download(submission_id):
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM submissions WHERE id=?", (submission_id,))
     submission = c.fetchone()
@@ -264,7 +311,7 @@ def check_status_api():
     if not name:
         return jsonify({"status": "error", "message": "Name is required"})
 
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT name, event_name, status, review_comment FROM submissions WHERE name = ?", (name,))
     row = cursor.fetchone()
@@ -283,43 +330,10 @@ def check_status_api():
     else:
         return jsonify({"status": "not_found"})
 
-# ========================
-# 测试接口（可选，方便排查）
-# ========================
-@app.route("/_test_email")
-def _test_email():
-    """
-    - http://127.0.0.1:5000/_test_email
-    - http://127.0.0.1:5000/_test_email?to=someone@example.com
-    """
-    to = (request.args.get("to") or ADMIN_EMAIL).strip()
-    ok, err = send_email("【测试】SMTP连通性", "这是一封测试邮件。", to)
-    return (f"✅ 已发送到 {to}" if ok else f"❌ 发送失败：{err}"), (200 if ok else 500)
-
-@app.route("/_test_row/<int:submission_id>")
-def _test_row(submission_id):
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
-    c.execute("SELECT name, email, event_name, status, review_comment FROM submissions WHERE id=?", (submission_id,))
-    row = c.fetchone()
-    conn.close()
-
-    if not row:
-        return "记录不存在", 404
-    name, email, event_name, status, review_comment = row
-    if not email:
-        return "该记录未填写邮箱", 400
-
-    subject = f"【测试】记录 {submission_id} 的审核结果 - {event_name or ''}"
-    content = f"您好 {name or ''}：\n\n状态：{status or '待审核'}\n审核说明：{review_comment or '无'}"
-    ok, err = send_email(subject, content, email)
-    return (f"✅ 已发送到 {email}" if ok else f"❌ 发送失败：{err}"), (200 if ok else 500)
-
 # --- 保活/健康检查 ---
 @app.route("/_health")
 def _health():
     return "ok", 200
-
 
 if __name__ == "__main__":
     app.run(debug=True)
