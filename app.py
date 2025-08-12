@@ -18,17 +18,16 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
 
 # 管理员登录密码（默认 admin123；建议在 Render 环境变量设置 ADMIN_PASSWORD）
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "maslandit339188")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-# ========== 邮件配置（改成你自己的） ==========
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")         # QQ邮箱可改成 "smtp.qq.com"
-SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))                 # Gmail TLS 端口 587（函数里会优先尝试 SSL 465）
-SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")   # 发件邮箱 —— 改成你的
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "clcinsfvvlafukef")  # 应用专用密码/授权码 —— 改成你的（建议无空格）
-ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com") # 管理员接收通知邮箱 —— 改成你的
+# ========== 邮件配置（可在 Render 环境变量里设置） ==========
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))
+SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "clcinsfvvlafukef")  # 建议为无空格的16位应用专用密码
+ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
-# ========== （可选）数据库持久化路径 ==========
-# 如在 Render 绑定了磁盘，可在环境变量设置 DB_PATH=/var/data/database.db
+# ========== 数据库路径（支持持久磁盘） ==========
 DB_PATH = os.getenv("DB_PATH", "database.db")
 
 # ===== 稳健版邮件发送函数（返回 (ok, err)）=====
@@ -37,6 +36,7 @@ def send_email(subject, content, to_email):
     发送邮件：优先走 SSL(465)，失败回退到 TLS(587)
     返回: (True, None) 或 (False, "错误信息")
     """
+    msg = MIMEMIMEMultipart()
     msg = MIMEMultipart()
     msg['From'] = formataddr(("福源堂器材外借系统", SENDER_EMAIL))
     msg['To'] = to_email
@@ -109,6 +109,7 @@ init_db()
 # ========================
 # 登录保护装饰器
 # ========================
+from functools import wraps
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -268,6 +269,18 @@ def send_review_email(submission_id):
         return jsonify({"success": True, "message": f"已发送到 {email}"})
     else:
         return jsonify({"success": False, "message": f"发送失败：{err}（详见服务器日志）"}), 500
+
+# 新增：删除记录
+@app.route("/delete_submission/<int:submission_id>", methods=["POST"])
+@login_required
+def delete_submission(submission_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM submissions WHERE id=?", (submission_id,))
+    affected = c.rowcount
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "submission_id": submission_id, "deleted": affected})
 
 # ========================
 # 导出 Word

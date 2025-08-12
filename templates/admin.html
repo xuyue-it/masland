@@ -4,98 +4,163 @@
 <meta charset="UTF-8">
 <title>管理审核 - 福源堂器材外借</title>
 <style>
-  body { font-family: "Microsoft YaHei", sans-serif; background:#f7f7f7; padding:20px; }
-  h1 { text-align:center; }
-  table { width:100%; border-collapse: collapse; background:#fff; }
-  th, td { border:1px solid #e5e5e5; padding:8px 10px; font-size:14px; }
-  th { background:#fafafa; }
-  .actions button { margin-right:6px; padding:6px 10px; cursor:pointer; }
-  .badge { padding:2px 8px; border-radius: 999px; font-size:12px; border:1px solid transparent; }
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --line:#e8ecf2;
+    --text:#111827;
+    --muted:#6b7280;
+    --primary:#2563eb;
+    --primary-600:#1d4ed8;
+    --green:#22c55e;
+    --green-600:#16a34a;
+    --red:#ef4444;
+    --red-600:#dc2626;
+    --amber:#f59e0b;
+    --amber-600:#d97706;
+    --indigo:#6366f1;
+    --indigo-600:#4f46e5;
+  }
+  *{ box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", sans-serif; background:var(--bg); padding:24px; color:var(--text); }
+  .wrap { max-width: 1400px; margin: 0 auto; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  h1 { margin:0; font-size:24px; }
+  .topbar-actions a, .topbar-actions button{
+    display:inline-block; text-decoration:none; cursor:pointer;
+    padding:8px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); color:var(--text); margin-left:8px;
+  }
+  .topbar-actions a:hover, .topbar-actions button:hover{ background:#f9fafb; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 6px 18px rgba(17,24,39,.05); }
+
+  table { width:100%; border-collapse: separate; border-spacing:0; }
+  thead th{
+    position:sticky; top:0; background:#f3f4f6; z-index:1;
+    font-weight:700; font-size:14px; text-align:left; padding:14px 12px; border-bottom:1px solid var(--line);
+  }
+  tbody td{
+    font-size:15px; padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top;
+  }
+  tbody tr:nth-child(odd){ background:#fbfdff; }
+  tbody tr:hover{ background:#f8fafc; }
+
+  .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
   .badge-pending { background:#fff7e6; border-color:#ffcc80; }
   .badge-approved { background:#e8f5e9; border-color:#a5d6a7; }
   .badge-rejected { background:#ffebee; border-color:#ef9a9a; }
-  .topbar { margin: 0 auto 16px; max-width:1200px; display:flex; justify-content:space-between; align-items:center; }
-  .topbar a { text-decoration:none; color:#0078D7; }
-  .wrap { max-width:1200px; margin:0 auto; }
+
+  .actions { min-width: 270px; }
+  .actions .stack { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .comment-input { width: 100%; min-width:180px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
+
+  /* 按钮统一风格 */
+  .btn{
+    appearance:none; border:none; cursor:pointer; padding:8px 12px; border-radius:10px;
+    color:#fff; font-size:14px; line-height:1; box-shadow:0 2px 8px rgba(17,24,39,.08);
+    transition:.15s transform ease, .15s opacity ease, .15s background ease;
+  }
+  .btn:hover{ transform: translateY(-1px); opacity:.95; }
+  .btn:active{ transform:none; }
+
+  .btn-approve{ background:var(--green); }
+  .btn-approve:hover{ background:var(--green-600); }
+  .btn-reject{ background:var(--red); }
+  .btn-reject:hover{ background:var(--red-600); }
+  .btn-mail{ background:var(--indigo); }
+  .btn-mail:hover{ background:var(--indigo-600); }
+  .btn-delete{ background:var(--amber); color:#111; }
+  .btn-delete:hover{ background:var(--amber-600); color:#fff; }
+
+  .muted { color:var(--muted); font-size:12px; }
+  a.link { color:var(--primary); text-decoration:none; }
+  a.link:hover { color:var(--primary-600); text-decoration:underline; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
       <h1>管理审核</h1>
-      <div>
-        <a href="/" target="_self">返回首页</a>
+      <div class="topbar-actions">
+        <a class="link" href="/" target="_self">返回首页</a>
+        <!-- 新增：退出按钮 -->
+        <a class="link" href="/logout" target="_self">退出登录</a>
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>姓名</th>
-          <th>电话</th>
-          <th>邮箱</th>
-          <th>团体名称</th>
-          <th>活动名称</th>
-          <th>开始</th>
-          <th>结束</th>
-          <th>地点</th>
-          <th>性质</th>
-          <th>人数</th>
-          <th>器材</th>
-          <th>特别需求</th>
-          <th>捐款</th>
-          <th>方式</th>
-          <th>备注</th>
-          <th>紧急联系人</th>
-          <th>紧急电话</th>
-          <th>状态</th>
-          <th>操作</th>
-          <th>导出</th>
-          <th>发送邮件</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in submissions %}
-        <tr id="row-{{ s[0] }}">
-          <td>{{ s[0] }}</td>
-          <td class="name-cell">{{ s[1] }}</td>
-          <td>{{ s[2] }}</td>
-          <td>{{ s[3] }}</td>
-          <td>{{ s[4] }}</td>
-          <td>{{ s[5] }}</td>
-          <td>{{ s[6] }} {{ s[7] }}</td>
-          <td>{{ s[8] }} {{ s[9] }}</td>
-          <td>{{ s[10] }}</td>
-          <td>{{ s[11] }}</td>
-          <td>{{ s[12] }}</td>
-          <td>{{ s[13] }}</td>
-          <td>{{ s[14] }}</td>
-          <td>{{ s[15] }}</td>
-          <td>{{ s[16] }}</td>
-          <td>{{ s[17] }}</td>
-          <td>{{ s[18] }}</td>
-          <td>{{ s[19] }}</td>
-          <td class="status-cell">
-            {% set st = s[21] or '' %}
-            <span class="badge
-              {% if '待' in st %}badge-pending{% elif '通' in st %}badge-approved{% elif '拒' in st %}badge-rejected{% endif %}
-            ">{{ st or '待审核' }}</span>
-          </td>
-          <td class="actions">
-            <input type="text" id="comment-{{ s[0] }}" placeholder="审核说明" style="width:120px; margin-bottom:4px;">
-            <br>
-            <button onclick="updateStatus({{ s[0] }}, '通过')">通过</button>
-            <button onclick="updateStatus({{ s[0] }}, '不通过')">不通过</button>
-          </td>
-          <td><a href="/download/{{ s[0] }}" target="_blank">Word</a></td>
-          <td>
-            <button onclick="sendReviewEmail({{ s[0] }})">发送邮件</button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>姓名</th>
+            <th>电话</th>
+            <th>邮箱</th>
+            <th>团契</th>
+            <th>活动名称</th>
+            <th>开始时间</th>
+            <th>结束时间</th>
+            <th>地点</th>
+            <th>性质</th>
+            <th>人数</th>
+            <th>器材</th>
+            <th>特别需求</th>
+            <th>奉献</th>
+            <th>方式</th>
+            <th>备注</th>
+            <th>紧急联系人</th>
+            <th>紧急电话</th>
+            <th>状态</th>
+            <th>操作</th>
+            <th>导出</th>
+            <th>发送邮件</th>
+            <th>删除</th> <!-- 新增列 -->
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in submissions %}
+          <tr id="row-{{ s[0] }}">
+            <td>{{ s[0] }}</td>
+            <td class="name-cell">{{ s[1] }}</td>
+            <td>{{ s[2] }}</td>
+            <td>{{ s[3] }}</td>
+            <td>{{ s[4] }}</td>
+            <td>{{ s[5] }}</td>
+            <td>{{ s[6] }} {{ s[7] }}</td>
+            <td>{{ s[8] }} {{ s[9] }}</td>
+            <td>{{ s[10] }}</td>
+            <td>{{ s[11] }}</td>
+            <td>{{ s[12] }}</td>
+            <td>{{ s[13] }}</td>
+            <td>{{ s[14] }}</td>
+            <td>{{ s[15] }}</td>
+            <td>{{ s[16] }}</td>
+            <td>{{ s[17] }}</td>
+            <td>{{ s[18] }}</td>
+            <td>{{ s[19] }}</td>
+            <td class="status-cell">
+              {% set st = s[21] or '' %}
+              <span class="badge
+                {% if '待' in st %}badge-pending{% elif '通' in st %}badge-approved{% elif '拒' in st %}badge-rejected{% endif %}
+              ">{{ st or '待审核' }}</span>
+              <div class="muted">{% if s[22] %}备注：{{ s[22] }}{% endif %}</div>
+            </td>
+            <td class="actions">
+              <div class="stack">
+                <input type="text" id="comment-{{ s[0] }}" class="comment-input" placeholder="审核说明">
+                <button class="btn btn-approve" onclick="updateStatus({{ s[0] }}, '通过')">通过</button>
+                <button class="btn btn-reject" onclick="updateStatus({{ s[0] }}, '不通过')">不通过</button>
+              </div>
+            </td>
+            <td><a class="link" href="/download/{{ s[0] }}" target="_blank">Word</a></td>
+            <td><button class="btn btn-mail" onclick="sendReviewEmail({{ s[0] }})">发送邮件</button></td>
+            <td><button class="btn btn-delete" onclick="deleteSubmission({{ s[0] }})">删除</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
 <script>
@@ -138,6 +203,23 @@ function sendReviewEmail(id) {
     .then(d => {
       if (!d.success) { alert(d.message || "发送失败"); return; }
       alert(d.message || "已发送");
+    })
+    .catch(err => {
+      console.error(err);
+      alert("服务器异常");
+    });
+}
+
+// 新增：删除记录
+function deleteSubmission(id){
+  if (!confirm(`确认删除编号 ${id} 这条记录吗？此操作不可撤销。`)) return;
+  fetch(`/delete_submission/${id}`, { method: "POST" })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) { alert(d.message || "删除失败"); return; }
+      const row = document.getElementById(`row-${id}`);
+      if (row) row.remove();
+      alert(`已删除记录 ID: ${id}`);
     })
     .catch(err => {
       console.error(err);
