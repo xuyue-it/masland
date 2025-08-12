@@ -24,7 +24,6 @@
   }
   .topbar-actions a:hover{ background:#f9fafb; }
 
-  /* 横向滚动容器 */
   .scroll-x { width:100%; overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:0 6px 18px rgba(17,24,39,.05); }
 
   table { border-collapse: separate; border-spacing:0; white-space: nowrap; }
@@ -33,7 +32,6 @@
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
 
-  /* 器材列允许多行（其余列保持一行横向显示） */
   .td-equipment { white-space: normal; max-width: 260px; line-height: 1.5; }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
@@ -94,7 +92,7 @@
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
 
-            <!-- 器材：把逗号替换为 ",<br>"，不依赖自定义过滤器 -->
+            <!-- 器材：用 replace 把逗号换成 <br>，避免自定义过滤器 -->
             <td class="td-equipment">
               {{ (s[13] if s|length>13 else '') | default('', true) | replace(',', ',<br>') | safe }}
             </td>
@@ -106,7 +104,6 @@
             <td>{{ s[18] }}</td>
             <td>{{ s[19] }}</td>
 
-            <!-- 状态 + 审核说明：长度保护 -->
             <td class="status-cell" title="审核说明：{% if s|length>22 and s[22] %}{{ s[22] }}{% else %}{% endif %}">
               {% set st = (s[21] if s|length>21 and s[21] else '待审核') %}
               <span class="badge
@@ -133,63 +130,73 @@
   </div>
 
 <script>
+async function handleJsonResponse(resp) {
+  const text = await resp.text();
+  try { return JSON.parse(text); } catch (_) { return { success:false, message: text || '非JSON响应' }; }
+}
+
 function updateStatus(id, statusText) {
   const comment = document.getElementById(`comment-${id}`).value || "";
   if (!confirm(`确认将编号 ${id} 设置为「${statusText}」吗？`)) return;
 
   fetch(`/update_status/${id}/${encodeURIComponent(statusText)}`, {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comment: comment })
     })
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) { alert(d.message || "更新失败"); return; }
+    .then(async r => {
+      const data = await handleJsonResponse(r);
+      if (!r.ok || !data.success) {
+        alert(data.message || `更新失败（HTTP ${r.status})`);
+        return;
+      }
+      // 更新状态徽章
       const row = document.getElementById(`row-${id}`);
       const cell = row && row.querySelector('.status-cell');
       if (cell) {
         let cls = 'badge';
-        const st = d.status || statusText;
+        const st = data.status || statusText;
         if (st.includes('待') || st.toLowerCase() === 'pending') cls += ' badge-pending';
         else if (st.includes('通') || st.toLowerCase() === 'approved') cls += ' badge-approved';
         else if (st.includes('拒') || st.toLowerCase() === 'rejected') cls += ' badge-rejected';
         cell.innerHTML = `<span class="${cls}">${st}</span>`;
       }
-      alert(`已更新。ID: ${d.submission_id}，姓名：${d.name}，状态：${d.status}`);
+      alert(`已更新。ID: ${data.submission_id}，姓名：${data.name}，状态：${data.status}`);
     })
     .catch(err => {
       console.error(err);
-      alert("服务器异常");
+      alert("网络或服务器异常");
     });
 }
 
 function sendReviewEmail(id) {
   if (!confirm(`确认向该申请的邮箱发送当前审核结果和说明吗？`)) return;
-  fetch(`/send_review_email/${id}`, { method: "POST" })
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) { alert(d.message || "发送失败"); return; }
-      alert(d.message || "已发送");
+  fetch(`/send_review_email/${id}`, { method: "POST", credentials: "same-origin" })
+    .then(async r => {
+      const data = await handleJsonResponse(r);
+      if (!r.ok || !data.success) { alert(data.message || `发送失败（HTTP ${r.status})`); return; }
+      alert(data.message || "已发送");
     })
     .catch(err => {
       console.error(err);
-      alert("服务器异常");
+      alert("网络或服务器异常");
     });
 }
 
 function deleteSubmission(id){
   if (!confirm(`确认删除编号 ${id} 这条记录吗？此操作不可撤销。`)) return;
-  fetch(`/delete_submission/${id}`, { method: "POST" })
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) { alert(d.message || "删除失败"); return; }
+  fetch(`/delete_submission/${id}`, { method: "POST", credentials: "same-origin" })
+    .then(async r => {
+      const data = await handleJsonResponse(r);
+      if (!r.ok || !data.success) { alert(data.message || `删除失败（HTTP ${r.status})`); return; }
       const row = document.getElementById(`row-${id}`);
       if (row) row.remove();
       alert(`已删除记录 ID: ${id}`);
     })
     .catch(err => {
       console.error(err);
-      alert("服务器异常");
+      alert("网络或服务器异常");
     });
 }
 </script>
