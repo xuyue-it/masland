@@ -27,6 +27,16 @@ ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 # ========== 数据库路径 ==========
 DB_PATH = os.getenv("DB_PATH", "database.db")
 
+# ===== 模板过滤器：把逗号分隔字符串切成数组（用于“器材”列）=====
+@app.template_filter("split_csv")
+def split_csv(value, sep=","):
+    if value is None:
+        return []
+    try:
+        return [x.strip() for x in str(value).split(sep) if x.strip()]
+    except Exception:
+        return [str(value)]
+
 # ===== 稳健版邮件发送函数（返回 (ok, err)）=====
 def send_email(subject, content, to_email):
     """
@@ -54,9 +64,7 @@ def send_email(subject, content, to_email):
     # 2) 回退 TLS:587
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=20)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
+        server.ehlo(); server.starttls(); server.ehlo()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
         server.quit()
@@ -68,7 +76,7 @@ def send_email(subject, content, to_email):
         return False, str(e_tls)
 
 # ========================
-# 数据库初始化（含自动补列）
+# 数据库初始化（含自动补列，兼容旧库）
 # ========================
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -97,14 +105,14 @@ def init_db():
         status TEXT DEFAULT '待审核',
         review_comment TEXT
     )''')
-    # —— 自动补列：如果旧库没有 review_comment，就加上 ——
+    # 自动补列 review_comment（旧库兼容）
     try:
         c.execute("PRAGMA table_info(submissions)")
         cols = [row[1] for row in c.fetchall()]
         if "review_comment" not in cols:
             c.execute("ALTER TABLE submissions ADD COLUMN review_comment TEXT")
             conn.commit()
-    except Exception as _:
+    except Exception:
         pass
 
     conn.commit()

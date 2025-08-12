@@ -93,14 +93,10 @@
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
 
-            <!-- 器材：逗号 + 换行（只此列允许多行） -->
+            <!-- 器材：使用 split_csv 过滤器（逗号 + 换行） -->
             <td class="td-equipment">
-              {% set eq_items = (s[13] or '')|split(',') %}
-              {% for it in eq_items %}
-                {% set t = it.strip() %}
-                {% if t %}
-                  <span class="eq-line">{{ t }}{% if not loop.last %},{% endif %}</span>
-                {% endif %}
+              {% for t in (s[13] | default('') | split_csv) %}
+                <span class="eq-line">{{ t }}{% if not loop.last %},{% endif %}</span>
               {% endfor %}
             </td>
 
@@ -111,9 +107,9 @@
             <td>{{ s[18] }}</td>
             <td>{{ s[19] }}</td>
 
-            <!-- 状态 + 审核说明：旧库无第22列时安全处理 -->
+            <!-- 状态 + 审核说明：长度保护 -->
             <td class="status-cell" title="审核说明：{% if s|length>22 and s[22] %}{{ s[22] }}{% else %}{% endif %}">
-              {% set st = s[21] or '待审核' %}
+              {% set st = (s[21] if s|length>21 else '待审核') %}
               <span class="badge
                 {% if '待' in st %}badge-pending{% elif '通' in st %}badge-approved{% elif '拒' in st %}badge-rejected{% endif %}
               ">{{ st }}</span>
