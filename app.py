@@ -315,5 +315,11 @@ def _test_row(submission_id):
     ok, err = send_email(subject, content, email)
     return (f"✅ 已发送到 {email}" if ok else f"❌ 发送失败：{err}"), (200 if ok else 500)
 
+# --- 保活/健康检查 ---
+@app.route("/_health")
+def _health():
+    return "ok", 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
