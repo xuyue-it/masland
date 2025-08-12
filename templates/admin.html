@@ -157,8 +157,21 @@ function formatNow(){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function renderStatusCell(cell, id, status, review_comment){
+  let cls = 'badge';
+  const st = status || '待审核';
+  if (st.includes('待') || st.toLowerCase() === 'pending') cls += ' badge-pending';
+  else if (st.includes('通') || st.toLowerCase() === 'approved') cls += ' badge-approved';
+  else if (st.includes('拒') || st.toLowerCase() === 'rejected') cls += ' badge-rejected';
+  const comment = review_comment ? ` | <span class="muted">说明：${review_comment}</span>` : '';
+
+  // 保留原本行内提示 div（用于“已发送/错误”的提示）
+  const oldTip = cell.querySelector('.inline-tip');
+  const tipHTML = oldTip ? oldTip.outerHTML : `<div id="tip-${id}" class="inline-tip" style="display:none;"></div>`;
+  cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
+}
+
 function refreshRowStatus(id){
-  // 重新拉取数据库中的最新状态，保证显示为持久化后的值
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
     .then(data => {
@@ -166,18 +179,18 @@ function refreshRowStatus(id){
       const row = document.getElementById(`row-${id}`);
       const cell = row && row.querySelector('.status-cell');
       if (!cell) return;
-
-      const st = data.data.status || '待审核';
-      let cls = 'badge';
-      if (st.includes('待') || st.toLowerCase() === 'pending') cls += ' badge-pending';
-      else if (st.includes('通') || st.toLowerCase() === 'approved') cls += ' badge-approved';
-      else if (st.includes('拒') || st.toLowerCase() === 'rejected') cls += ' badge-rejected';
-
-      const comment = data.data.review_comment ? ` | <span class="muted">说明：${data.data.review_comment}</span>` : '';
-      const tipDiv = cell.querySelector('.inline-tip');
-      cell.innerHTML = `<span class="${cls}">${st}</span>${comment}` + (tipDiv ? tipDiv.outerHTML : `<div id="tip-${id}" class="inline-tip" style="display:none;"></div>`);
+      renderStatusCell(cell, id, data.data.status, data.data.review_comment);
     })
     .catch(()=>{});
+}
+
+// ✅ 页面加载时，把所有行都从数据库“回填”一次，保证是最新值
+function hydrateAllRows(){
+  const rows = document.querySelectorAll('tr[id^="row-"]');
+  rows.forEach(tr => {
+    const id = tr.id.replace('row-','');
+    refreshRowStatus(id);
+  });
 }
 
 function updateStatus(id, statusText) {
@@ -197,7 +210,7 @@ function updateStatus(id, statusText) {
         alert(data.message || `更新失败（HTTP ${r.status})`);
         return;
       }
-      // 立即从数据库回拉，确保显示为持久化后的值
+      // 更新成功后，立即从数据库回拉，确保显示为持久化后的值
       refreshRowStatus(id);
       setTip(id, `已更新为「${data.status}」 ${formatNow()}`);
     })
@@ -253,6 +266,9 @@ function deleteSubmission(id){
       alert("网络或服务器异常");
     });
 }
+
+// 页面加载后，统一回填一次“状态”为数据库里的最新值
+document.addEventListener('DOMContentLoaded', hydrateAllRows);
 </script>
 </body>
 </html>
