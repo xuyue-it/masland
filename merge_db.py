@@ -5,7 +5,8 @@ SRC = [
     r"C:\Users\lausu\Desktop\updated_whatsapp_form\database.db",
     r"C:\Users\lausu\Desktop\updated_whatsapp_form - Copy\database.db",
 ]
-DST = os.path.expanduser(r"~\masland-data\database.db")
+# 与 app.py 保持一致：优先 DB_PATH，未设则用 ~\masland-data\database.db
+DST = os.getenv("DB_PATH") or os.path.expanduser(r"~\masland-data\database.db")
 
 # 提前建目录
 os.makedirs(os.path.dirname(DST), exist_ok=True)

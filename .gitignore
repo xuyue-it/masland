@@ -3,7 +3,7 @@ database.db
 database.db-wal
 database.db-shm
 
-# 忽略用户目录持久化数据库
+# 忽略用户目录持久化数据库（与 app.py/merge_db.py 保持一致）
 masland-data/
 *.db
 *.db-wal

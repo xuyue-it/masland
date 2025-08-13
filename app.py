@@ -3,7 +3,7 @@ import sqlite3
 from docx import Document
 # ---- 发邮件相关 ----
 import smtplib
-from email.mime.text import MIMEText   # ← 修正这里（dot，不是下划线）
+from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
@@ -31,7 +31,8 @@ ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 HOME_DIR = os.path.expanduser("~")
 DATA_DIR = os.path.join(HOME_DIR, "masland-data")
 os.makedirs(DATA_DIR, exist_ok=True)
-DB_PATH = os.path.join(DATA_DIR, "database.db")
+# 允许可选用 DB_PATH 环境变量覆盖；未设置则用固定路径（满足你“push 不覆盖数据”的要求）
+DB_PATH = os.getenv("DB_PATH") or os.path.join(DATA_DIR, "database.db")
 print(">>> Using DB file:", DB_PATH)
 
 # ========== 器材清单（与前端 index.html 的 equip_map 对应）==========
@@ -418,6 +419,4 @@ def _health():
     return "ok", 200
 
 if __name__ == "__main__":
-    # 为了云端/本地统一：绑定 0.0.0.0 并读取 PORT（本地没有就用 5000）
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True)
