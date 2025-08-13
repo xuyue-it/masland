@@ -10,7 +10,6 @@ from email.utils import formataddr
 import traceback
 import os
 from functools import wraps
-from datetime import datetime
 
 app = Flask(__name__)
 
@@ -27,6 +26,20 @@ ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
 # ========== 数据库路径 ==========
 DB_PATH = os.getenv("DB_PATH", "database.db")
+
+# ========== 器材清单（与前端 index.html 的 equip_map 对应）==========
+EQUIP_MAP = {
+    "mic": "麦克风",
+    "amp": "扩音器",
+    "pa": "音响系统",
+    "projector": "投影机",
+    "screen": "投影屏幕",
+    "ext": "延长线",
+    "table": "桌子",
+    "chair": "椅子",
+    "podium": "讲台",
+    "hdmi": "HDMI线",
+}
 
 # ===== 稳健版邮件发送函数（返回 (ok, err)）=====
 def send_email(subject, content, to_email):
@@ -93,14 +106,12 @@ def init_db():
         review_comment TEXT
     )''')
 
-    # —— 永久设置 WAL & 同步策略（更抗丢）——
     try:
         c.execute("PRAGMA journal_mode=WAL")
         c.execute("PRAGMA synchronous=NORMAL")
     except Exception:
         pass
 
-    # —— 兼容旧库：补列 review_comment ——
     try:
         c.execute("PRAGMA table_info(submissions)")
         cols = [row[1] for row in c.fetchall()]
@@ -128,6 +139,7 @@ def add_no_cache_headers(resp):
 # ========================
 # 登录保护
 # ========================
+from functools import wraps
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -158,14 +170,28 @@ def logout():
 # ========================
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # ✅ 把 equip_map 传给模板，避免 Jinja 渲染报错
+    return render_template("index.html", equip_map=EQUIP_MAP)
 
 @app.route("/submit", methods=["POST"])
 def submit():
     data = request.form.to_dict(flat=True)
-    checklist = request.form.getlist("equipment")
-    equipment_str = ", ".join(checklist) if checklist else ""
 
+    # ✅ 与前端一致：读取 equip_*** + 数量，拼成 “中文名x数量”
+    equip_items = []
+    for key, cname in EQUIP_MAP.items():
+        if data.get(f"equip_{key}") == "on":
+            qty_str = (data.get(f"equip_{key}_qty") or "").strip()
+            try:
+                qty = int(qty_str)
+            except:
+                qty = 0
+            if qty <= 0:
+                qty = 1
+            equip_items.append(f"{cname}x{qty}")
+    equipment_str = ", ".join(equip_items)
+
+    # 保持你原有字段
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -190,7 +216,7 @@ def submit():
                f"申请人：{data.get('name')}\n活动：{data.get('event_name')}\n电话：{data.get('phone')}\n邮箱：{data.get('email')}",
                ADMIN_EMAIL)
 
-    # ✅ 返回“提交成功”提示页：提醒可用【查询状态】，并提供返回首页按钮
+    # 提交成功提示页（含“查询状态”提示与返回首页按钮）
     return """
 <!DOCTYPE html>
 <html lang="zh">
