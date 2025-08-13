@@ -27,10 +27,11 @@ SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
-# ========== 数据库路径（固定到项目目录）==========
-# ✅ 只改这里：固定使用 ./database.db（与 app.py 同级）
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database.db")
+# ========== 数据库路径（固定到用户目录，不受代码覆盖影响）==========
+HOME_DIR = os.path.expanduser("~")
+DATA_DIR = os.path.join(HOME_DIR, "masland-data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "database.db")
 print(">>> Using DB file:", DB_PATH)
 
 # ========== 器材清单（与前端 index.html 的 equip_map 对应）==========
