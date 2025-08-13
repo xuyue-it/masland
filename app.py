@@ -173,7 +173,7 @@ def logout():
 # ========================
 @app.route("/")
 def index():
-    # 把 equip_map 传给模板（你的前端会用到）
+    # 把 equip_map 传给模板（你的前端用它生成器材项）
     return render_template("index.html", equip_map=EQUIP_MAP)
 
 @app.route("/submit", methods=["POST"])
@@ -218,7 +218,7 @@ def submit():
                f"申请人：{data.get('name')}\n活动：{data.get('event_name')}\n电话：{data.get('phone')}\n邮箱：{data.get('email')}",
                ADMIN_EMAIL)
 
-    # 成功页：仅提示如何查询状态与返回首页
+    # 成功页：提示如何“查询状态”，并提供“返回首页”
     return """
 <!DOCTYPE html>
 <html lang="zh">
