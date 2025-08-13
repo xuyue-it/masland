@@ -22,7 +22,7 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))
 SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "clcinsfvvlafukef")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
 # ========== 数据库路径 ==========
