@@ -1,0 +1,5 @@
+database.db
+*.db-wal
+*.db-shm
+masland-data/
+__pycache__/
