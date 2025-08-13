@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>管理审核 - 福源堂器材外借</title>
+
+<!-- ✅ 强制禁用缓存，防止回退或刷新后看到旧页面 -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+
 <style>
   :root{
     --bg:#f5f7fb; --card:#ffffff; --line:#e8ecf2; --text:#111827; --muted:#6b7280;
@@ -15,14 +21,22 @@
   *{ box-sizing: border-box; }
   body { font-family: "Microsoft YaHei", sans-serif; background:var(--bg); padding:24px; color:var(--text); }
   .wrap { max-width: 100%; margin: 0 auto; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  h1 { margin:0; font-size:24px; }
-  .topbar-actions a{
-    display:inline-block; text-decoration:none; cursor:pointer;
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; }
+  h1 { margin:0; font-size:24px; font-weight:900; }
+  .topbar-actions{ display:flex; align-items:center; gap:8px; flex-wrap: wrap; }
+  .topbar-actions a,
+  .topbar-actions button{
+    display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; cursor:pointer;
     padding:8px 12px; border-radius:10px; border:1px solid var(--line);
-    background:var(--card); color:var(--text); margin-left:8px;
+    background:var(--card); color:var(--text);
+    box-shadow:0 3px 0 #d7def0, 0 8px 16px rgba(17,24,39,.06);
+    transition:.12s transform ease, .12s box-shadow ease;
   }
-  .topbar-actions a:hover{ background:#f9fafb; }
+  .topbar-actions a:hover, .topbar-actions button:hover{ transform: translateY(-1px); box-shadow:0 4px 0 #cbd6f2, 0 10px 18px rgba(17,24,39,.08);}
+  .topbar-actions a:active, .topbar-actions button:active{ transform: translateY(1px); }
+
+  .autorefresh{ display:inline-flex; align-items:center; gap:6px; padding:8px 10px; border:1px dashed var(--line); border-radius:10px; background:#fff; }
 
   .scroll-x { width:100%; overflow-x:auto; overflow-y:hidden; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:0 6px 18px rgba(17,24,39,.05); }
 
@@ -32,7 +46,14 @@
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
 
-  .td-equipment { white-space: normal; max-width: 260px; line-height: 1.5; }
+  /* ✅ 器材列：使用 chip 标签，自动换行、对齐 */
+  .td-equipment { white-space: normal; max-width: 320px; line-height: 1.5; }
+  .equip-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 8px; border-radius:999px; font-size:12px; background:#eef2ff; color:#27316f; border:1px solid #d9e0ff;
+  }
+  .chip b{ font-weight:900; }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
   .badge-pending { background:#fff7e6; border-color:#ffcc80; }
@@ -66,6 +87,15 @@
     <div class="topbar">
       <h1>管理审核</h1>
       <div class="topbar-actions">
+        <!-- ✅ 一键强制刷新，带时间戳，避开缓存/CDN -->
+        <button type="button" onclick="hardReload()">刷新</button>
+
+        <!-- ✅ 自动刷新控制（默认开，每 30 秒刷新一次） -->
+        <label class="autorefresh">
+          <input type="checkbox" id="autoRefreshToggle" checked>
+          自动刷新（30 秒）
+        </label>
+
         <a href="/" target="_self">返回首页</a>
         <a href="/logout" target="_self">退出登录</a>
       </div>
@@ -82,7 +112,7 @@
             <th>操作</th><th>导出</th><th>发送邮件</th><th>删除</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="tbody-root">
           {% for s in submissions %}
           <tr id="row-{{ s[0] }}">
             <td>{{ s[0] }}</td>
@@ -97,9 +127,9 @@
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
 
-            <!-- 器材：把逗号替换为 ,<br> -->
-            <td class="td-equipment">
-              {{ (s[13] if s|length>13 else '') | default('', true) | replace(',', ',<br>') | safe }}
+            <!-- 原始内容先保留（以防没有 JS 也可读），稍后用 JS 转 chip -->
+            <td class="td-equipment raw-equip">
+              {{ (s[13] if s|length>13 else '') | default('', true) }}
             </td>
 
             <td>{{ s[14] }}</td>
@@ -138,11 +168,11 @@
   </div>
 
 <script>
+/* ---------- 工具 ---------- */
 async function handleJsonResponse(resp) {
   const text = await resp.text();
   try { return JSON.parse(text); } catch (_) { return { success:false, message: text || '非JSON响应' }; }
 }
-
 function setTip(id, msg, isError=false){
   const tip = document.getElementById(`tip-${id}`);
   if (!tip) return;
@@ -150,13 +180,11 @@ function setTip(id, msg, isError=false){
   tip.classList.toggle('error', !!isError);
   tip.style.display = 'block';
 }
-
 function formatNow(){
   const d = new Date();
   const pad = n=> String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
-
 function renderStatusCell(cell, id, status, review_comment){
   let cls = 'badge';
   const st = status || '待审核';
@@ -164,13 +192,12 @@ function renderStatusCell(cell, id, status, review_comment){
   else if (st.includes('通') || st.toLowerCase() === 'approved') cls += ' badge-approved';
   else if (st.includes('拒') || st.toLowerCase() === 'rejected') cls += ' badge-rejected';
   const comment = review_comment ? ` | <span class="muted">说明：${review_comment}</span>` : '';
-
-  // 保留原本行内提示 div（用于“已发送/错误”的提示）
   const oldTip = cell.querySelector('.inline-tip');
   const tipHTML = oldTip ? oldTip.outerHTML : `<div id="tip-${id}" class="inline-tip" style="display:none;"></div>`;
   cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
 }
 
+/* ---------- 行状态回填：确保始终是数据库里的最终值 ---------- */
 function refreshRowStatus(id){
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
@@ -183,8 +210,6 @@ function refreshRowStatus(id){
     })
     .catch(()=>{});
 }
-
-// ✅ 页面加载时，把所有行都从数据库“回填”一次，保证是最新值
 function hydrateAllRows(){
   const rows = document.querySelectorAll('tr[id^="row-"]');
   rows.forEach(tr => {
@@ -193,6 +218,25 @@ function hydrateAllRows(){
   });
 }
 
+/* ---------- ✅ 器材列美化：把“麦克风x2, 扩音器x1 ...”渲染为 chip ---------- */
+function beautifyEquipment(){
+  const cells = document.querySelectorAll('.raw-equip');
+  cells.forEach(td=>{
+    const raw = (td.textContent || '').trim();
+    if (!raw){ td.innerHTML = ''; return; }
+    const parts = raw.split(/[,，\n]+/).map(s=>s.trim()).filter(Boolean);
+    const chips = parts.map(p=>{
+      // 允许“名称x数量”或“名称x 数量”
+      const m = p.match(/^(.+?)x\s*(\d+)$/i);
+      if (m){ return `<span class="chip"><span>${m[1]}</span><b>x${m[2]}</b></span>`; }
+      return `<span class="chip">${p}</span>`;
+    }).join('');
+    td.classList.remove('raw-equip');
+    td.innerHTML = `<div class="equip-chips">${chips}</div>`;
+  });
+}
+
+/* ---------- 审核操作 ---------- */
 function updateStatus(id, statusText) {
   const comment = document.getElementById(`comment-${id}`).value || "";
   if (!confirm(`确认将编号 ${id} 设置为「${statusText}」吗？`)) return;
@@ -210,8 +254,7 @@ function updateStatus(id, statusText) {
         alert(data.message || `更新失败（HTTP ${r.status})`);
         return;
       }
-      // 更新成功后，立即从数据库回拉，确保显示为持久化后的值
-      refreshRowStatus(id);
+      refreshRowStatus(id); // 以数据库值为准再拉一次
       setTip(id, `已更新为「${data.status}」 ${formatNow()}`);
     })
     .catch(err => {
@@ -231,12 +274,12 @@ function sendReviewEmail(id) {
       const data = await handleJsonResponse(r);
       if (!r.ok || !data.success) {
         setTip(id, data.message || `发送失败（HTTP ${r.status})`, true);
-        if (btn) btn.disabled = false; // 失败则恢复按钮
+        if (btn) btn.disabled = false;
         alert(data.message || `发送失败（HTTP ${r.status})`);
         return;
       }
       setTip(id, `${data.message}（${formatNow()}）`);
-      // 成功后按钮保持禁用，避免重复发送
+      // 成功后保持禁用，避免重复 spam
     })
     .catch(err => {
       console.error(err);
@@ -267,8 +310,40 @@ function deleteSubmission(id){
     });
 }
 
-// 页面加载后，统一回填一次“状态”为数据库里的最新值
-document.addEventListener('DOMContentLoaded', hydrateAllRows);
+/* ---------- ✅ 强制刷新（带时间戳，避开缓存） ---------- */
+function hardReload(){
+  const url = new URL(window.location.href);
+  url.searchParams.set('ts', Date.now().toString());
+  window.location.replace(url.toString());
+}
+
+/* ---------- ✅ 自动刷新控制（默认 30s） ---------- */
+let autoTimer = null;
+function startAutoRefresh(){
+  stopAutoRefresh();
+  autoTimer = setInterval(()=>hardReload(), 30000);
+}
+function stopAutoRefresh(){
+  if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+}
+
+/* ---------- 初始挂载 ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  beautifyEquipment();   // 器材列渲染为 chip
+  hydrateAllRows();      // 每行状态以数据库最终值为准
+
+  // 自动刷新默认开启
+  const toggle = document.getElementById('autoRefreshToggle');
+  if (toggle){
+    if (toggle.checked) startAutoRefresh();
+    toggle.addEventListener('change', ()=> toggle.checked ? startAutoRefresh() : stopAutoRefresh());
+  }
+});
+
+/* ✅ 处理浏览器回退缓存（bfcache）：若来自缓存，强制刷新为最新页面 */
+window.addEventListener('pageshow', function (e) {
+  if (e.persisted) { hardReload(); }
+});
 </script>
 </body>
 </html>
