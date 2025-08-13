@@ -5,65 +5,126 @@
   <title>福源堂器材外借申请</title>
   <link rel="stylesheet" href="/static/style.css">
   <style>
-    :root{--card:#fff;--bd:#e5e5e5;--muted:#666;--primary:#0a58ff}
-    body{font-family:"Microsoft YaHei",sans-serif;background:#f7f7f7;color:#000;padding:24px}
-    h1{font-size:28px;text-align:center;margin:0 0 4px}
-    h3{font-size:16px;text-align:center;margin:0 0 16px;color:#444}
-    .tabs{display:flex;justify-content:center;gap:12px;margin:14px 0 20px}
-    .tabs button{padding:8px 16px;border:1px solid var(--bd);background:#fff;border-radius:8px;cursor:pointer}
-    .tabs button:hover{background:#f2f6ff}
+    /* 颜色与基础 */
+    :root{
+      --card:#fff; --bd:#e5e5e5; --muted:#666;
+      --primary:#0a58ff; --shadow:rgba(0,0,0,.12);
+    }
+
+    /* 页面主体：输入框不强制微软雅黑；非输入类文本统一微软雅黑 */
+    body{background:#f7f7f7;color:#000;padding:24px;}
+    h1,h2,h3,label,.muted,.tabs button,.nav-title{font-family:"Microsoft YaHei","微软雅黑",sans-serif;}
+
+    /* 标题样式（更大、更粗） */
+    h1{font-size:32px;font-weight:900;text-align:center;margin:0 0 6px}
+    h3{font-size:16px;text-align:center;margin:0 0 18px;color:#444;font-weight:700}
+
+    /* 顶部切换按钮（立体） */
+    .tabs{display:flex;justify-content:center;gap:14px;margin:10px 0 22px}
+    .btn-tab{
+      position:relative; padding:10px 18px; border-radius:12px; border:1px solid var(--bd);
+      background:#fff; cursor:pointer; font-weight:800;
+      box-shadow:0 3px 0 #cfd6ff, 0 8px 16px var(--shadow);
+      transition:transform .08s ease, box-shadow .15s ease;
+    }
+    .btn-tab:hover{transform:translateY(-1px); box-shadow:0 4px 0 #c5ceff,0 10px 18px var(--shadow);}
+    .btn-tab:active{transform:translateY(2px); box-shadow:0 1px 0 #c5ceff,0 4px 10px var(--shadow);}
+
+    /* 卡片排版 */
     form{max-width:1000px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,0,0,.04)}
-    .card h2{font-size:18px;margin:0 0 12px}
+    .card{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:0 6px 16px var(--shadow)}
+    .card h2{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900;margin:0 0 12px}
+
+    /* 图标（可爱风） */
+    .icon{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
+
+    /* 表单网格 */
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+    /* 行与控件 */
     .row{display:flex;flex-direction:column;gap:6px}
-    .row label{font-weight:700}
-    input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="time"],input[type="number"],select,textarea{
-      padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;outline:none
+    .row label{font-weight:800}
+    input[type="text"],input[type="email"],input[type="tel"],input[type="date"],
+    input[type="time"],input[type="number"],select,textarea{
+      padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;outline:none;
+      /* 输入框不强制微软雅黑，保留用户系统字体 */
+      font-family:inherit;
     }
     textarea{resize:vertical;min-height:90px}
+
+    /* 器材九宫格 */
+    .equip-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .select-all{display:flex;align-items:center;gap:8px;font-weight:800}
     .equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .equip-item{border:1px solid var(--bd);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:space-between;background:#fff}
     .equip-left{display:flex;align-items:center;gap:8px}
     .qty{display:none;align-items:center;gap:6px}
-    .qty input{width:70px;text-align:center}
+    .qty input{width:72px;text-align:center}
     .muted{color:var(--muted);font-size:13px}
+
+    /* 提交按钮（立体） */
     .submit-wrap{text-align:center;margin-top:14px}
-    .btn{padding:10px 18px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;cursor:pointer}
-    .btn:hover{filter:brightness(.95)}
+    .btn-submit{
+      padding:12px 22px;border:none;border-radius:12px;background:var(--primary);color:#fff;
+      font-weight:900;font-size:16px;cursor:pointer;
+      box-shadow:0 4px 0 #063fc7, 0 10px 18px var(--shadow);
+      transition:transform .08s ease, box-shadow .15s ease;
+    }
+    .btn-submit:hover{transform:translateY(-1px); box-shadow:0 5px 0 #063fc7,0 12px 20px var(--shadow);}
+    .btn-submit:active{transform:translateY(2px); box-shadow:0 2px 0 #063fc7,0 6px 12px var(--shadow);}
+
     /* 查询状态卡片 */
+    #statusForm{max-width:520px;margin:0 auto 18px;display:none}
     .status-card{max-width:520px;margin:12px auto 0;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--bd)}
     .status-row{display:flex;justify-content:space-between;margin:6px 0}
     .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);font-size:12px}
   </style>
 </head>
 <body>
-  <h1>福源堂器材外借申请</h1>
+  <h1 class="nav-title">福源堂器材外借申请</h1>
   <h3>Masland Methodist Church 资讯委员会</h3>
 
   <div class="tabs">
-    <button onclick="window.location.href='/'">申请表格</button>
-    <button onclick="toggleStatusForm()">查询状态</button>
+    <button class="btn-tab" onclick="window.location.href='/'">申请表格</button>
+    <button class="btn-tab" onclick="toggleStatusForm()">查询状态</button>
   </div>
 
   <!-- 查询状态表单 -->
-  <form id="statusForm" class="card" style="display:none;max-width:520px;margin-bottom:18px" onsubmit="return false">
-    <h2>查询审核状态</h2>
+  <form id="statusForm" class="card" onsubmit="return false">
+    <h2>
+      <span class="icon" aria-hidden="true">
+        <!-- 放大镜可爱图标 -->
+        <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+          <circle cx="11" cy="11" r="7" stroke="#333" stroke-width="2"/>
+          <path d="M20 20l-3.2-3.2" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      查询审核状态
+    </h2>
     <div class="row">
       <label for="status_name">姓名 *</label>
       <input type="text" id="status_name" required>
     </div>
     <div class="submit-wrap" style="margin-top:10px">
-      <button class="btn" type="button" onclick="doLookup()">查询</button>
+      <button class="btn-submit" type="button" onclick="doLookup()">查询</button>
     </div>
     <div id="statusResult" class="status-card" style="display:none;"></div>
   </form>
 
   <form action="/submit" method="post" id="mainForm">
-    <!-- 申请人信息（全部必填） -->
+    <!-- 申请人信息 -->
     <section class="card">
-      <h2>申请人信息</h2>
+      <h2>
+        <span class="icon" aria-hidden="true">
+          <!-- 可爱头像 -->
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <circle cx="12" cy="8" r="4" stroke="#333" stroke-width="2"/>
+            <path d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        申请人信息
+      </h2>
       <div class="grid-2">
         <div class="row">
           <label>姓名 *</label>
@@ -84,9 +145,18 @@
       </div>
     </section>
 
-    <!-- 活动信息（全部必填） -->
+    <!-- 活动信息 -->
     <section class="card">
-      <h2>活动信息</h2>
+      <h2>
+        <span class="icon" aria-hidden="true">
+          <!-- 可爱日历 -->
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <rect x="3" y="5" width="18" height="16" rx="2" stroke="#333" stroke-width="2"/>
+            <path d="M8 3v4M16 3v4M3 9h18" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        活动信息
+      </h2>
       <div class="grid-2">
         <div class="row">
           <label>活动名称 *</label>
@@ -127,9 +197,27 @@
       </div>
     </section>
 
-    <!-- 器材需求（勾选→出现数量） -->
+    <!-- 器材需求 -->
     <section class="card">
-      <h2>器材需求</h2>
+      <h2>
+        <span class="icon" aria-hidden="true">
+          <!-- 可爱工具箱 -->
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <rect x="3" y="8" width="18" height="11" rx="2" stroke="#333" stroke-width="2"/>
+            <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="#333" stroke-width="2" />
+          </svg>
+        </span>
+        器材需求
+      </h2>
+
+      <div class="equip-head">
+        <div class="muted">请选择需要的器材，勾选后可填写数量</div>
+        <label class="select-all">
+          <input type="checkbox" id="equip_select_all">
+          全选器材
+        </label>
+      </div>
+
       <div class="equip-grid">
         {% for key, cname in equip_map.items() %}
         <div class="equip-item">
@@ -151,10 +239,18 @@
       </div>
     </section>
 
-    <!-- 感恩奉献（可选；勾选→金额+方式） -->
+    <!-- 感恩奉献 -->
     <section class="card">
-      <h2>感恩奉献（可选）</h2>
-      <label style="display:flex;align-items:center;gap:8px">
+      <h2>
+        <span class="icon" aria-hidden="true">
+          <!-- 可爱爱心 -->
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <path d="M12 21s-7-4.35-9-7.5C1 10 2.5 7 5.5 7c2 0 3.5 1.5 3.5 1.5S10.5 7 12.5 7C15.5 7 17 10 15 13.5 13 16.65 12 21 12 21z" stroke="#333" stroke-width="2" fill="none"/>
+          </svg>
+        </span>
+        感恩奉献（可选）
+      </h2>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:800">
         <input type="checkbox" id="donation_consent" name="donation_consent">
         我愿意为此次器材使用献上感恩奉献
       </label>
@@ -171,13 +267,22 @@
             <option value="银行转账">银行转账</option>
           </select>
         </div>
-        <div class="row"><span class="muted">（不勾选上方复选框则无需填写）</span></div>
+        <div class="row"><span class="muted">（未勾选上方复选框则无需填写）</span></div>
       </div>
     </section>
 
     <!-- 其他信息 -->
     <section class="card">
-      <h2>其他信息</h2>
+      <h2>
+        <span class="icon" aria-hidden="true">
+          <!-- 信息小i -->
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+            <circle cx="12" cy="12" r="9" stroke="#333" stroke-width="2"/>
+            <path d="M12 8.5v.01M12 11v5" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        其他信息
+      </h2>
       <div class="grid-2">
         <div class="row">
           <label>备注</label>
@@ -195,16 +300,18 @@
     </section>
 
     <div class="submit-wrap">
-      <button class="btn" type="submit">提交申请</button>
+      <button class="btn-submit" type="submit">提交申请</button>
     </div>
   </form>
 
   <script>
-    // 查询状态
+    // 显示/隐藏查询状态表单
     function toggleStatusForm(){
       const f=document.getElementById('statusForm');
       f.style.display = (f.style.display==='none'||!f.style.display)?'block':'none';
     }
+
+    // 查询状态
     async function doLookup(){
       const name = (document.getElementById('status_name').value||'').trim();
       const box = document.getElementById('statusResult');
@@ -225,21 +332,36 @@
       }catch(e){ box.textContent='网络或服务器异常';}
     }
 
-    // 器材：勾选→显示数量，并在勾选时把数量设为 required
+    // 器材：勾选→显示数量；新增“全选器材”
     (function initEquip(){
       const ids = {{ equip_map.keys()|list|tojson }};
-      ids.forEach(k=>{
+      const allBox = document.getElementById('equip_select_all');
+
+      function syncOne(k){
         const cb = document.getElementById(`equip_${k}`);
         const box = document.getElementById(`qty_${k}`);
         const qty = document.querySelector(`input[name="equip_${k}_qty"]`);
         if(!cb||!box||!qty) return;
-        const sync=()=>{
-          if(cb.checked){ box.style.display='flex'; qty.required=true; if(!qty.value) qty.value=1;}
-          else{ box.style.display='none'; qty.required=false; }
-        };
-        cb.addEventListener('change', sync);
-        sync();
+        if(cb.checked){ box.style.display='flex'; qty.required=true; if(!qty.value) qty.value=1;}
+        else{ box.style.display='none'; qty.required=false; }
+      }
+
+      // 单个监听
+      ids.forEach(k=>{
+        const cb = document.getElementById(`equip_${k}`);
+        if(cb){ cb.addEventListener('change', ()=>syncOne(k)); syncOne(k); }
       });
+
+      // 全选
+      if(allBox){
+        allBox.addEventListener('change', ()=>{
+          const on = allBox.checked;
+          ids.forEach(k=>{
+            const cb = document.getElementById(`equip_${k}`);
+            if(cb){ cb.checked = on; syncOne(k); }
+          });
+        });
+      }
     })();
 
     // 感恩奉献：勾选→显示金额+方式，并设置 required
@@ -251,8 +373,7 @@
       const sync=()=>{
         const on = consent.checked;
         block.style.display = on ? 'grid' : 'none';
-        amount.required = on;
-        method.required = on;
+        amount.required = on; method.required = on;
         if(!on){ amount.value=''; method.value=''; }
       };
       consent.addEventListener('change', sync);
