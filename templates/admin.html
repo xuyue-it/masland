@@ -51,8 +51,8 @@
   .equip-lines{ display:block; }
   .equip-line{
     display:block;
-    white-space: nowrap;       /* 不换行 */
-    word-break: keep-all;      /* CJK 不随意断开 */
+    white-space: nowrap;
+    word-break: keep-all;
   }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
@@ -137,12 +137,13 @@
             <td>{{ s[18] }}</td>
             <td>{{ s[19] }}</td>
 
-            <td class="status-cell" title="审核说明：{% if s|length>22 and s[22] %}{{ s[22] }}{% else %}{% endif %}">
-              {% set st = (s[21] if s|length>21 and s[21] else '待审核') %}
+            <!-- 🔧 修正索引：status = s[20], review_comment = s[21] -->
+            <td class="status-cell" title="审核说明：{% if s|length>21 and s[21] %}{{ s[21] }}{% else %}{% endif %}">
+              {% set st = (s[20] if s|length>20 and s[20] else '待审核') %}
               <span class="badge
                 {% if '待' in st %}badge-pending{% elif '通' in st %}badge-approved{% elif '拒' in st %}badge-rejected{% endif %}
               ">{{ st }}</span>
-              {% if s|length>22 and s[22] %} | <span class="muted">说明：{{ s[22] }}</span>{% endif %}
+              {% if s|length>21 and s[21] %} | <span class="muted">说明：{{ s[21] }}</span>{% endif %}
               <div id="tip-{{ s[0] }}" class="inline-tip" style="display:none;"></div>
             </td>
 
@@ -194,7 +195,7 @@ function renderStatusCell(cell, id, status, review_comment){
   cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
 }
 
-/* 行状态回填：以数据库最终值为准 */
+/* 行状态回填：以数据库最终值为准（/api/submission 返回字段与索引一致） */
 function refreshRowStatus(id){
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
@@ -298,7 +299,6 @@ function deleteSubmission(id){
       }
       const row = document.getElementById(`row-${id}`);
       if (row) row.remove();
-      // 删除后无需处理序号，重新加载页面或自动刷新会从1开始
       alert(`已删除记录 ID: ${id}`);
     })
     .catch(err => {
