@@ -3,7 +3,7 @@ import sqlite3
 from docx import Document
 # ---- 发邮件相关 ----
 import smtplib
-from email.mime_text import MIMEText
+from email.mime.text import MIMEText   # ← 修正这里（dot，不是下划线）
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
@@ -418,4 +418,6 @@ def _health():
     return "ok", 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # 为了云端/本地统一：绑定 0.0.0.0 并读取 PORT（本地没有就用 5000）
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=False)
