@@ -1,7 +1,14 @@
+# 忽略数据库文件（防止覆盖）
 database.db
 database.db-wal
 database.db-shm
+
+# 忽略用户目录持久化数据库
+masland-data/
+*.db
 *.db-wal
 *.db-shm
-masland-data/
+
+# 忽略 Python 缓存
 __pycache__/
+*.pyc
