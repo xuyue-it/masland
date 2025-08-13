@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>管理审核 - 福源堂器材外借</title>
 
-<!-- 强制禁用缓存，防止回退或刷新后看到旧页面 -->
+<!-- 禁用缓存，避免回退看到旧页 -->
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -46,10 +46,14 @@
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
 
-  /* 器材列：每行一条 */
-  .td-equipment { white-space: normal; max-width: 360px; line-height: 1.45; }
+  /* ✅ 器材列：每行一条，且“名称 x数量”不拆开 */
+  .td-equipment { white-space: normal; max-width: 360px; line-height: 1.45; min-width: 180px; }
   .equip-lines{ display:block; }
-  .equip-line{ display:block; }
+  .equip-line{
+    display:block;
+    white-space: nowrap;       /* 不换行 */
+    word-break: keep-all;      /* CJK 不随意断开 */
+  }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
   .badge-pending { background:#fff7e6; border-color:#ffcc80; }
@@ -106,8 +110,10 @@
         </thead>
         <tbody id="tbody-root">
           {% for s in submissions %}
-          <tr id="row-{{ s[0] }}">
-            <td>{{ s[0] }}</td>
+          <tr id="row-{{ s[0] }}" data-id="{{ s[0] }}">
+            <!-- ✅ 显示连续编号：loop.index ；但整行仍用真实ID做操作 -->
+            <td>{{ loop.index }}</td>
+
             <td>{{ s[1] }}</td>
             <td>{{ s[2] }}</td>
             <td>{{ s[3] }}</td>
@@ -119,7 +125,7 @@
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
 
-            <!-- 原始器材文本，JS 会美化为一行一条 -->
+            <!-- 原始器材文本，JS 美化为“名称 x数量”，每条独占一行 -->
             <td class="td-equipment raw-equip">
               {{ (s[13] if s|length>13 else '') | default('', true) }}
             </td>
@@ -160,7 +166,6 @@
   </div>
 
 <script>
-/* ---------- 工具 ---------- */
 async function handleJsonResponse(resp) {
   const text = await resp.text();
   try { return JSON.parse(text); } catch (_) { return { success:false, message: text || '非JSON响应' }; }
@@ -189,7 +194,7 @@ function renderStatusCell(cell, id, status, review_comment){
   cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
 }
 
-/* ---------- 行状态回填：确保始终是数据库里的最终值 ---------- */
+/* 行状态回填：以数据库最终值为准 */
 function refreshRowStatus(id){
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
@@ -210,13 +215,12 @@ function hydrateAllRows(){
   });
 }
 
-/* ---------- 器材列：每行一条（名称 与 “x数量”之间留空格） ---------- */
+/* ✅ 器材列：每行一条，名称与“x数量”之间有空格，且不拆开 */
 function beautifyEquipment(){
   const cells = document.querySelectorAll('.raw-equip');
   cells.forEach(td=>{
     const raw = (td.textContent || '').trim();
     if (!raw){ td.innerHTML = ''; return; }
-    // 允许英文逗号、中文逗号或换行分隔
     const parts = raw.split(/[,，\n]+/).map(s=>s.trim()).filter(Boolean);
     const lines = parts.map(p=>{
       const m = p.match(/^(.+?)x\s*(\d+)$/i);
@@ -230,7 +234,7 @@ function beautifyEquipment(){
   });
 }
 
-/* ---------- 审核操作 ---------- */
+/* 审核、发邮件、删除：保持原逻辑 */
 function updateStatus(id, statusText) {
   const comment = document.getElementById(`comment-${id}`).value || "";
   if (!confirm(`确认将编号 ${id} 设置为「${statusText}」吗？`)) return;
@@ -294,6 +298,7 @@ function deleteSubmission(id){
       }
       const row = document.getElementById(`row-${id}`);
       if (row) row.remove();
+      // 删除后无需处理序号，重新加载页面或自动刷新会从1开始
       alert(`已删除记录 ID: ${id}`);
     })
     .catch(err => {
@@ -303,27 +308,21 @@ function deleteSubmission(id){
     });
 }
 
-/* ---------- 强制刷新（带时间戳，避开缓存） ---------- */
+/* 强制刷新（带时间戳） */
 function hardReload(){
   const url = new URL(window.location.href);
   url.searchParams.set('ts', Date.now().toString());
   window.location.replace(url.toString());
 }
 
-/* ---------- 自动刷新控制（默认 30s） ---------- */
+/* 自动刷新 */
 let autoTimer = null;
-function startAutoRefresh(){
-  stopAutoRefresh();
-  autoTimer = setInterval(()=>hardReload(), 30000);
-}
-function stopAutoRefresh(){
-  if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
-}
+function startAutoRefresh(){ stopAutoRefresh(); autoTimer = setInterval(()=>hardReload(), 30000); }
+function stopAutoRefresh(){ if (autoTimer){ clearInterval(autoTimer); autoTimer = null; } }
 
-/* ---------- 初始挂载 ---------- */
 document.addEventListener('DOMContentLoaded', ()=>{
-  beautifyEquipment();   // 器材列渲染为每行一条
-  hydrateAllRows();      // 每行状态以数据库最终值为准
+  beautifyEquipment();
+  hydrateAllRows();
 
   const toggle = document.getElementById('autoRefreshToggle');
   if (toggle){
@@ -331,11 +330,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     toggle.addEventListener('change', ()=> toggle.checked ? startAutoRefresh() : stopAutoRefresh());
   }
 });
-
-/* 处理浏览器回退缓存（bfcache）：若来自缓存，强制刷新为最新页面 */
-window.addEventListener('pageshow', function (e) {
-  if (e.persisted) { hardReload(); }
-});
+window.addEventListener('pageshow', function (e) { if (e.persisted) { hardReload(); } });
 </script>
 </body>
 </html>
