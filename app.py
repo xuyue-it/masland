@@ -24,8 +24,10 @@ SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
-# ========== 数据库路径 ==========
-DB_PATH = os.getenv("DB_PATH", "database.db")
+# ========== 数据库路径（锁定为绝对路径，防止换目录后换库）==========
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "database.db"))
+print(">>> Using DB file:", DB_PATH)  # 启动时打印，便于确认始终用同一个库
 
 # ========== 器材清单（与前端 index.html 的 equip_map 对应）==========
 EQUIP_MAP = {
@@ -106,12 +108,14 @@ def init_db():
         review_comment TEXT
     )''')
 
+    # —— 永久设置 WAL & 同步策略（更抗丢）——
     try:
         c.execute("PRAGMA journal_mode=WAL")
         c.execute("PRAGMA synchronous=NORMAL")
     except Exception:
         pass
 
+    # —— 兼容旧库：补列 review_comment ——
     try:
         c.execute("PRAGMA table_info(submissions)")
         cols = [row[1] for row in c.fetchall()]
@@ -139,7 +143,6 @@ def add_no_cache_headers(resp):
 # ========================
 # 登录保护
 # ========================
-from functools import wraps
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -170,14 +173,14 @@ def logout():
 # ========================
 @app.route("/")
 def index():
-    # ✅ 把 equip_map 传给模板，避免 Jinja 渲染报错
+    # 把 equip_map 传给模板（你的前端会用到）
     return render_template("index.html", equip_map=EQUIP_MAP)
 
 @app.route("/submit", methods=["POST"])
 def submit():
     data = request.form.to_dict(flat=True)
 
-    # ✅ 与前端一致：读取 equip_*** + 数量，拼成 “中文名x数量”
+    # 读取 equip_*** + 数量，拼成 “中文名x数量”
     equip_items = []
     for key, cname in EQUIP_MAP.items():
         if data.get(f"equip_{key}") == "on":
@@ -191,7 +194,6 @@ def submit():
             equip_items.append(f"{cname}x{qty}")
     equipment_str = ", ".join(equip_items)
 
-    # 保持你原有字段
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -216,7 +218,7 @@ def submit():
                f"申请人：{data.get('name')}\n活动：{data.get('event_name')}\n电话：{data.get('phone')}\n邮箱：{data.get('email')}",
                ADMIN_EMAIL)
 
-    # 提交成功提示页（含“查询状态”提示与返回首页按钮）
+    # 成功页：仅提示如何查询状态与返回首页
     return """
 <!DOCTYPE html>
 <html lang="zh">
@@ -235,14 +237,13 @@ def submit():
   .btn{appearance:none;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:900}
   .btn-primary{background:#2563eb;color:#fff;box-shadow:0 3px 0 #1d4ed8,0 8px 16px rgba(0,0,0,.08)}
   .btn-primary:hover{filter:brightness(.95)}
-  .btn-ghost{background:#fff;border:1px solid #e5e7eb}
 </style>
 </head>
 <body>
   <div class="card">
     <h1>提交成功！</h1>
     <p>我们已收到您的申请，管理员会尽快处理。</p>
-    <p>您可以回到填写页面，点击页面上方的<strong>【查询状态】</strong>按钮，随时查看审核结果。</p>
+    <p>可回到填写页面，点击上方<strong>【查询状态】</strong>查看审核结果。</p>
     <div class="btns">
       <button class="btn btn-primary" onclick="location.href='/'">返回首页</button>
     </div>
