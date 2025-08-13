@@ -15,7 +15,10 @@ app = Flask(__name__)
 
 # ========== 基本配置 ==========
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "maslandit33918")
+
+# 直接使用固定密码（不再被环境变量覆盖）
+ADMIN_PASSWORD = "maslandit339188"
+print(">>> ADMIN_PASSWORD source: CODE")
 
 # ========== 邮件配置（记得用应用专用密码）==========
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -24,10 +27,13 @@ SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
-# ========== 数据库路径（锁定为绝对路径，防止换目录后换库）==========
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "database.db"))
-print(">>> Using DB file:", DB_PATH)  # 启动时打印，便于确认始终用同一个库
+# ========== 数据库路径（固定到项目外的用户数据目录）==========
+# 这样更新/拷贝项目文件时，不会把数据库换掉或覆盖回旧版本
+HOME_DIR = os.path.expanduser("~")
+DATA_DIR = os.path.join(HOME_DIR, "masland-data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "database.db")
+print(">>> Using DB file:", DB_PATH)
 
 # ========== 器材清单（与前端 index.html 的 equip_map 对应）==========
 EQUIP_MAP = {
