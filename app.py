@@ -17,7 +17,7 @@ app = Flask(__name__)
 # ========== 基本配置 ==========
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
 
-# 管理员密码
+# 管理员密码（保持你现有的）
 ADMIN_PASSWORD = "maslandit339188"
 print(">>> ADMIN_PASSWORD source: CODE")
 
@@ -28,7 +28,7 @@ SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
-# ========== 数据库路径（代码自动选择；可被 DB_PATH 覆盖）==========
+# ========== 数据库路径（自动选择；可被 DB_PATH 覆盖）==========
 HOME_DIR = os.path.expanduser("~")
 DEFAULT_DB = ("/data/database.db" if os.path.isdir("/data")
               else os.path.join(HOME_DIR, "masland-data", "database.db"))
@@ -92,7 +92,7 @@ def init_db():
         c.execute("PRAGMA synchronous=NORMAL")
     except Exception:
         pass
-    # 补列
+    # 兼容旧库：补列
     try:
         c.execute("PRAGMA table_info(submissions)")
         cols = [row[1] for row in c.fetchall()]
