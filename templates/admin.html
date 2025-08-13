@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>管理审核 - 福源堂器材外借</title>
 
-<!-- ✅ 强制禁用缓存，防止回退或刷新后看到旧页面 -->
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -46,14 +45,10 @@
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
 
-  /* ✅ 器材列：使用 chip 标签，自动换行、对齐 */
-  .td-equipment { white-space: normal; max-width: 320px; line-height: 1.5; }
-  .equip-chips{ display:flex; flex-wrap:wrap; gap:6px; }
-  .chip{
-    display:inline-flex; align-items:center; gap:6px;
-    padding:4px 8px; border-radius:999px; font-size:12px; background:#eef2ff; color:#27316f; border:1px solid #d9e0ff;
-  }
-  .chip b{ font-weight:900; }
+  /* ✅ 器材列：一行一个 */
+  .td-equipment { white-space: normal; max-width: 360px; line-height: 1.45; }
+  .equip-lines{ display:block; }
+  .equip-line{ display:block; }
 
   .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid transparent; }
   .badge-pending { background:#fff7e6; border-color:#ffcc80; }
@@ -87,15 +82,11 @@
     <div class="topbar">
       <h1>管理审核</h1>
       <div class="topbar-actions">
-        <!-- ✅ 一键强制刷新，带时间戳，避开缓存/CDN -->
         <button type="button" onclick="hardReload()">刷新</button>
-
-        <!-- ✅ 自动刷新控制（默认开，每 30 秒刷新一次） -->
         <label class="autorefresh">
           <input type="checkbox" id="autoRefreshToggle" checked>
           自动刷新（30 秒）
         </label>
-
         <a href="/" target="_self">返回首页</a>
         <a href="/logout" target="_self">退出登录</a>
       </div>
@@ -127,7 +118,7 @@
             <td>{{ s[11] }}</td>
             <td>{{ s[12] }}</td>
 
-            <!-- 原始内容先保留（以防没有 JS 也可读），稍后用 JS 转 chip -->
+            <!-- 原始器材文本，JS 会美化为一行一条 -->
             <td class="td-equipment raw-equip">
               {{ (s[13] if s|length>13 else '') | default('', true) }}
             </td>
@@ -168,7 +159,6 @@
   </div>
 
 <script>
-/* ---------- 工具 ---------- */
 async function handleJsonResponse(resp) {
   const text = await resp.text();
   try { return JSON.parse(text); } catch (_) { return { success:false, message: text || '非JSON响应' }; }
@@ -197,7 +187,7 @@ function renderStatusCell(cell, id, status, review_comment){
   cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
 }
 
-/* ---------- 行状态回填：确保始终是数据库里的最终值 ---------- */
+/* ✅ 行状态回填 */
 function refreshRowStatus(id){
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
@@ -218,25 +208,26 @@ function hydrateAllRows(){
   });
 }
 
-/* ---------- ✅ 器材列美化：把“麦克风x2, 扩音器x1 ...”渲染为 chip ---------- */
+/* ✅ 器材列：一行一个（名称 与 “x数量”之间有空格） */
 function beautifyEquipment(){
   const cells = document.querySelectorAll('.raw-equip');
   cells.forEach(td=>{
     const raw = (td.textContent || '').trim();
     if (!raw){ td.innerHTML = ''; return; }
     const parts = raw.split(/[,，\n]+/).map(s=>s.trim()).filter(Boolean);
-    const chips = parts.map(p=>{
-      // 允许“名称x数量”或“名称x 数量”
+    const lines = parts.map(p=>{
       const m = p.match(/^(.+?)x\s*(\d+)$/i);
-      if (m){ return `<span class="chip"><span>${m[1]}</span><b>x${m[2]}</b></span>`; }
-      return `<span class="chip">${p}</span>`;
+      if (m){
+        return `<div class="equip-line">${m[1]} x${m[2]}</div>`;
+      }
+      return `<div class="equip-line">${p}</div>`;
     }).join('');
     td.classList.remove('raw-equip');
-    td.innerHTML = `<div class="equip-chips">${chips}</div>`;
+    td.innerHTML = `<div class="equip-lines">${lines}</div>`;
   });
 }
 
-/* ---------- 审核操作 ---------- */
+/* 审核与邮件与删除：保持你的原有逻辑 */
 function updateStatus(id, statusText) {
   const comment = document.getElementById(`comment-${id}`).value || "";
   if (!confirm(`确认将编号 ${id} 设置为「${statusText}」吗？`)) return;
@@ -254,7 +245,7 @@ function updateStatus(id, statusText) {
         alert(data.message || `更新失败（HTTP ${r.status})`);
         return;
       }
-      refreshRowStatus(id); // 以数据库值为准再拉一次
+      refreshRowStatus(id);
       setTip(id, `已更新为「${data.status}」 ${formatNow()}`);
     })
     .catch(err => {
@@ -263,7 +254,6 @@ function updateStatus(id, statusText) {
       alert("网络或服务器异常");
     });
 }
-
 function sendReviewEmail(id) {
   if (!confirm(`确认向该申请的邮箱发送当前审核结果和说明吗？`)) return;
   const btn = document.getElementById(`mailbtn-${id}`);
@@ -279,7 +269,6 @@ function sendReviewEmail(id) {
         return;
       }
       setTip(id, `${data.message}（${formatNow()}）`);
-      // 成功后保持禁用，避免重复 spam
     })
     .catch(err => {
       console.error(err);
@@ -288,7 +277,6 @@ function sendReviewEmail(id) {
       alert("网络或服务器异常");
     });
 }
-
 function deleteSubmission(id){
   if (!confirm(`确认删除编号 ${id} 这条记录吗？此操作不可撤销。`)) return;
   fetch(`/delete_submission/${id}`, { method: "POST", credentials: "same-origin" })
@@ -310,14 +298,14 @@ function deleteSubmission(id){
     });
 }
 
-/* ---------- ✅ 强制刷新（带时间戳，避开缓存） ---------- */
+/* 强制刷新（带时间戳） */
 function hardReload(){
   const url = new URL(window.location.href);
   url.searchParams.set('ts', Date.now().toString());
   window.location.replace(url.toString());
 }
 
-/* ---------- ✅ 自动刷新控制（默认 30s） ---------- */
+/* 自动刷新（30s） */
 let autoTimer = null;
 function startAutoRefresh(){
   stopAutoRefresh();
@@ -327,12 +315,11 @@ function stopAutoRefresh(){
   if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
 }
 
-/* ---------- 初始挂载 ---------- */
+/* 初始挂载 */
 document.addEventListener('DOMContentLoaded', ()=>{
-  beautifyEquipment();   // 器材列渲染为 chip
-  hydrateAllRows();      // 每行状态以数据库最终值为准
+  beautifyEquipment();
+  hydrateAllRows();
 
-  // 自动刷新默认开启
   const toggle = document.getElementById('autoRefreshToggle');
   if (toggle){
     if (toggle.checked) startAutoRefresh();
@@ -340,7 +327,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 });
 
-/* ✅ 处理浏览器回退缓存（bfcache）：若来自缓存，强制刷新为最新页面 */
+/* 处理 bfcache：后退返回旧页时强刷 */
 window.addEventListener('pageshow', function (e) {
   if (e.persisted) { hardReload(); }
 });
