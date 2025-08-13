@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 # ========== 基本配置 ==========
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "maslandit33918")
 
 # ========== 邮件配置（记得用应用专用密码）==========
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
