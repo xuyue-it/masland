@@ -1,237 +1,273 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>福源堂器材外借申请</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        body {
-            font-family: "Microsoft YaHei", sans-serif;
-            color: #000;
-            padding: 20px;
-            background-color: #f7f7f7;
-        }
-        h1, h3 {
-            text-align: center;
-            font-weight: bold;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        h3 { font-size: 18px; }
-        form { max-width: 800px; margin: 0 auto; }
-        fieldset {
-            border: 2px solid #ccc;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-            background-color: #fff;
-        }
-        legend { font-weight: bold; font-size: 18px; }
-        .form-row { display: flex; align-items: center; margin-bottom: 12px; }
-        .form-row label { flex: 0 0 160px; font-weight: bold; }
-        .form-row input, .form-row select, .form-row textarea {
-            flex: 1; font-family: "Microsoft YaHei", sans-serif; padding: 6px; border: 2px solid #aaa; border-radius: 5px;
-        }
-        textarea { resize: vertical; }
-        .checkbox-group { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
-        .checkbox-group label { display: flex; align-items: center; font-weight: normal; }
-        .checkbox-group input[type="checkbox"] { margin-right: 6px; }
-        .equipment-select-all { margin-bottom: 10px; font-weight: bold; }
-        .equipment-select-all label { display: flex; align-items: center; }
-        button {
-            padding: 10px 20px; font-size: 16px; font-family: "Microsoft YaHei", sans-serif;
-            border-radius: 6px; border: none; background-color: #0078D7; color: white; cursor: pointer;
-        }
-        button:hover { background-color: #005ea6; }
-        .tabs { text-align: center; margin-bottom: 20px; }
-        .tabs button { margin: 0 10px; padding: 8px 16px; font-size: 14px; }
-        legend::before { content: "📌 "; }
-        #statusForm { max-width: 500px; margin: 15px auto; display: none; }
-
-        /* 新增：查询结果展示 */
-        .status-result {
-            max-width: 500px; margin: 10px auto 0; padding: 12px 14px;
-            border-radius: 8px; background: #fff; border: 1px solid #e5e5e5; line-height: 1.6;
-        }
-        .status-row { display: flex; justify-content: space-between; margin: 6px 0; }
-        .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid transparent; }
-        .badge-pending { background:#fff7e6; border-color:#ffcc80; }
-        .badge-approved { background:#e8f5e9; border-color:#a5d6a7; }
-        .badge-rejected { background:#ffebee; border-color:#ef9a9a; }
-        .muted { color:#666; font-size:13px; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>福源堂器材外借申请</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    :root{--card:#fff;--bd:#e5e5e5;--muted:#666;--primary:#0a58ff}
+    body{font-family:"Microsoft YaHei",sans-serif;background:#f7f7f7;color:#000;padding:24px}
+    h1{font-size:28px;text-align:center;margin:0 0 4px}
+    h3{font-size:16px;text-align:center;margin:0 0 16px;color:#444}
+    .tabs{display:flex;justify-content:center;gap:12px;margin:14px 0 20px}
+    .tabs button{padding:8px 16px;border:1px solid var(--bd);background:#fff;border-radius:8px;cursor:pointer}
+    .tabs button:hover{background:#f2f6ff}
+    form{max-width:1000px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+    .card h2{font-size:18px;margin:0 0 12px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .row{display:flex;flex-direction:column;gap:6px}
+    .row label{font-weight:700}
+    input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="time"],input[type="number"],select,textarea{
+      padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;outline:none
+    }
+    textarea{resize:vertical;min-height:90px}
+    .equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .equip-item{border:1px solid var(--bd);border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:space-between;background:#fff}
+    .equip-left{display:flex;align-items:center;gap:8px}
+    .qty{display:none;align-items:center;gap:6px}
+    .qty input{width:70px;text-align:center}
+    .muted{color:var(--muted);font-size:13px}
+    .submit-wrap{text-align:center;margin-top:14px}
+    .btn{padding:10px 18px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;cursor:pointer}
+    .btn:hover{filter:brightness(.95)}
+    /* 查询状态卡片 */
+    .status-card{max-width:520px;margin:12px auto 0;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--bd)}
+    .status-row{display:flex;justify-content:space-between;margin:6px 0}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);font-size:12px}
+  </style>
 </head>
 <body>
-    <h1>福源堂器材外借申请</h1>
-    <h3>Masland Methodist Church 资讯委员会</h3>
+  <h1>福源堂器材外借申请</h1>
+  <h3>Masland Methodist Church 资讯委员会</h3>
 
-    <div class="tabs">
-        <button onclick="window.location.href='/'">申请表格</button>
-        <button onclick="toggleStatusForm()">查询状态</button>
+  <div class="tabs">
+    <button onclick="window.location.href='/'">申请表格</button>
+    <button onclick="toggleStatusForm()">查询状态</button>
+  </div>
+
+  <!-- 查询状态表单 -->
+  <form id="statusForm" class="card" style="display:none;max-width:520px;margin-bottom:18px" onsubmit="return false">
+    <h2>查询审核状态</h2>
+    <div class="row">
+      <label for="status_name">姓名 *</label>
+      <input type="text" id="status_name" required>
     </div>
+    <div class="submit-wrap" style="margin-top:10px">
+      <button class="btn" type="button" onclick="doLookup()">查询</button>
+    </div>
+    <div id="statusResult" class="status-card" style="display:none;"></div>
+  </form>
 
-    <!-- 查询状态表单（按姓名） -->
-    <form id="statusForm" action="/check_status" method="get">
-        <fieldset>
-            <legend>查询审核状态</legend>
-            <div class="form-row">
-                <label for="status_name">姓名 *</label>
-                <input type="text" name="name" id="status_name" required>
-            </div>
-            <div style="text-align: center;">
-                <button type="submit">查询</button>
-            </div>
-            <div id="statusResult" class="status-result" style="display:none;"></div>
-        </fieldset>
-    </form>
-
-    <form action="/submit" method="post" onsubmit="return validateForm()">
-        <fieldset>
-            <legend>申请人信息</legend>
-            <div class="form-row"><label>姓名 *</label><input name="name" id="name" required></div>
-            <div class="form-row"><label>联系电话 *</label><input name="phone" id="phone" required></div>
-            <div class="form-row"><label>电子邮箱</label><input name="email"></div>
-            <div class="form-row"><label>所属团契/小组</label><input name="group"></div>
-        </fieldset>
-
-        <fieldset>
-            <legend>活动信息</legend>
-            <div class="form-row"><label>活动名称 *</label><input name="event_name" required></div>
-            <div class="form-row"><label>开始日期 *</label><input type="date" name="start_date" required></div>
-            <div class="form-row"><label>开始时间 *</label><input type="time" name="start_time" required></div>
-            <div class="form-row"><label>结束日期 *</label><input type="date" name="end_date" required></div>
-            <div class="form-row"><label>结束时间 *</label><input type="time" name="end_time" required></div>
-            <div class="form-row"><label>活动地点 *</label><input name="location" required></div>
-            <div class="form-row"><label>活动性质 *</label>
-                <select name="event_type" required>
-                    <option value="">请选择活动性质</option>
-                    <option value="内部">内部</option>
-                    <option value="外借">外借</option>
-                </select>
-            </div>
-            <div class="form-row"><label>预计参与人数 *</label><input name="participants" required></div>
-        </fieldset>
-
-        <fieldset>
-            <legend>器材需求</legend>
-            <div class="equipment-select-all">
-                <label><input type="checkbox" id="selectAll" onchange="toggleAllEquipment(this)"> 全选器材</label>
-            </div>
-
-            <div class="checkbox-group">
-                <label><input type="checkbox" name="equipment" value="麦克风">麦克风</label>
-                <label><input type="checkbox" name="equipment" value="扩音器">扩音器</label>
-                <label><input type="checkbox" name="equipment" value="音响系统">音响系统</label>
-                <label><input type="checkbox" name="equipment" value="投影机">投影机</label>
-                <label><input type="checkbox" name="equipment" value="投影屏幕">投影屏幕</label>
-                <label><input type="checkbox" name="equipment" value="延长线">延长线</label>
-                <label><input type="checkbox" name="equipment" value="桌子">桌子</label>
-                <label><input type="checkbox" name="equipment" value="椅子">椅子</label>
-                <label><input type="checkbox" name="equipment" value="讲台">讲台</label>
-                <label><input type="checkbox" name="equipment" value="HDMI线">HDMI线</label>
-            </div>
-
-            <div class="form-row">
-                <label>特殊需求</label>
-                <textarea name="special_request" placeholder="如有特殊器材需求或使用要求，请在此说明"></textarea>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>感恩奉献（可选）</legend>
-            <label>
-                <input type="checkbox" name="donation" value="yes" id="donationCheckbox" onchange="toggleDonationMethod()">
-                我愿意为此次器材使用献上感恩奉献
-            </label>
-
-            <div id="donationMethodContainer" style="margin-top: 10px; display: none;">
-                <label for="donation_method" style="display: block; margin-bottom: 5px; font-weight: bold;">请选择奉献方式</label>
-                <select name="donation_method" id="donation_method" style="padding: 6px; border: 2px solid #aaa; border-radius: 5px; font-family: 'Microsoft YaHei', sans-serif;">
-                    <option value="">-- 请选择 --</option>
-                    <option value="现金">现金</option>
-                    <option value="银行转账">银行转账</option>
-                </select>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>其他信息</legend>
-            <div class="form-row"><label>备注</label>
-                <textarea name="remarks" placeholder="如有其他需要说明的事项，请在此填写"></textarea>
-            </div>
-            <div class="form-row"><label>紧急联系人姓名</label><input name="emergency_name" id="emergency_name"></div>
-            <div class="form-row"><label>紧急联系人电话</label><input name="emergency_phone" id="emergency_phone"></div>
-        </fieldset>
-
-        <div style="text-align: center;">
-            <button type="submit">提交申请</button>
+  <form action="/submit" method="post" id="mainForm">
+    <!-- 申请人信息（全部必填） -->
+    <section class="card">
+      <h2>申请人信息</h2>
+      <div class="grid-2">
+        <div class="row">
+          <label>姓名 *</label>
+          <input type="text" name="name" required>
         </div>
-    </form>
+        <div class="row">
+          <label>联系电话 *</label>
+          <input type="tel" name="phone" required>
+        </div>
+        <div class="row">
+          <label>电子邮箱 *</label>
+          <input type="email" name="email" required>
+        </div>
+        <div class="row">
+          <label>所属团契/小组 *</label>
+          <input type="text" name="group" required>
+        </div>
+      </div>
+    </section>
 
-    <script>
-        function toggleAllEquipment(source) {
-            const checkboxes = document.querySelectorAll('input[name="equipment"]');
-            checkboxes.forEach(cb => cb.checked = source.checked);
-        }
-        function validateForm() {
-            const name = document.getElementById("name").value.trim();
-            const phone = document.getElementById("phone").value.trim();
-            const emergencyName = document.getElementById("emergency_name").value.trim();
-            const emergencyPhone = document.getElementById("emergency_phone").value.trim();
-            if (emergencyName && emergencyName === name) { alert("⚠️ 紧急联系人姓名要与申请人姓名不一致"); return false; }
-            if (emergencyPhone && emergencyPhone === phone) { alert("⚠️ 紧急联系人电话要与申请人联系电话不一致"); return false; }
-            return true;
-        }
-        function toggleDonationMethod() {
-            const checkbox = document.getElementById('donationCheckbox');
-            const container = document.getElementById('donationMethodContainer');
-            container.style.display = checkbox.checked ? 'block' : 'none';
-        }
-        function toggleStatusForm() {
-            const form = document.getElementById('statusForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
+    <!-- 活动信息（全部必填） -->
+    <section class="card">
+      <h2>活动信息</h2>
+      <div class="grid-2">
+        <div class="row">
+          <label>活动名称 *</label>
+          <input type="text" name="event_name" required>
+        </div>
+        <div class="row">
+          <label>活动地点 *</label>
+          <input type="text" name="location" required>
+        </div>
+        <div class="row">
+          <label>开始日期 *</label>
+          <input type="date" name="start_date" required>
+        </div>
+        <div class="row">
+          <label>开始时间 *</label>
+          <input type="time" name="start_time" required>
+        </div>
+        <div class="row">
+          <label>结束日期 *</label>
+          <input type="date" name="end_date" required>
+        </div>
+        <div class="row">
+          <label>结束时间 *</label>
+          <input type="time" name="end_time" required>
+        </div>
+        <div class="row">
+          <label>活动性质 *</label>
+          <select name="event_type" required>
+            <option value="">请选择活动性质</option>
+            <option value="内部">内部</option>
+            <option value="外借">外借</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>预计参与人数 *</label>
+          <input type="number" name="participants" min="1" step="1" required>
+        </div>
+      </div>
+    </section>
 
-        // 查询状态（包括审核说明）
-        (function bindStatusLookup(){
-            const form = document.getElementById('statusForm');
-            const input = document.getElementById('status_name');
-            const box = document.getElementById('statusResult');
-            if (!form || !input || !box) return;
+    <!-- 器材需求（勾选→出现数量） -->
+    <section class="card">
+      <h2>器材需求</h2>
+      <div class="equip-grid">
+        {% for key, cname in equip_map.items() %}
+        <div class="equip-item">
+          <div class="equip-left">
+            <input type="checkbox" id="equip_{{key}}" name="equip_{{key}}">
+            <label for="equip_{{key}}">{{ cname }}</label>
+          </div>
+          <div class="qty" id="qty_{{key}}">
+            <span class="muted">数量</span>
+            <input type="number" name="equip_{{key}}_qty" min="1" step="1" value="1">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
 
-            form.addEventListener('submit', async function(e){
-                e.preventDefault();
-                const name = (input.value || '').trim();
-                if (!name) { box.style.display='block'; box.textContent='请输入姓名'; return; }
-                box.style.display='block'; box.textContent='查询中...';
+      <div class="row" style="margin-top:12px">
+        <label>特殊需求</label>
+        <textarea name="special_request" placeholder="如有特殊器材需求或使用要求，请在此说明"></textarea>
+      </div>
+    </section>
 
-                try {
-                    const res = await fetch(`/check_status_api?name=${encodeURIComponent(name)}`);
-                    const data = await res.json();
+    <!-- 感恩奉献（可选；勾选→金额+方式） -->
+    <section class="card">
+      <h2>感恩奉献（可选）</h2>
+      <label style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="donation_consent" name="donation_consent">
+        我愿意为此次器材使用献上感恩奉献
+      </label>
+      <div class="grid-3" id="donation_block" style="margin-top:10px;display:none">
+        <div class="row">
+          <label>奉献金额（RM） *</label>
+          <input type="number" id="donation_amount" name="donation_amount" min="1" step="1" placeholder="请输入金额">
+        </div>
+        <div class="row">
+          <label>奉献方式 *</label>
+          <select id="donation_method" name="donation_method">
+            <option value="">-- 请选择 --</option>
+            <option value="现金">现金</option>
+            <option value="银行转账">银行转账</option>
+          </select>
+        </div>
+        <div class="row"><span class="muted">（不勾选上方复选框则无需填写）</span></div>
+      </div>
+    </section>
 
-                    if (!data || !data.status) { box.textContent='服务器返回异常。'; return; }
-                    if (data.status === 'not_found') { box.textContent = `未找到【${name}】的申请记录。`; return; }
-                    if (data.status === 'error') { box.textContent = data.message || '查询出错，请稍后再试。'; return; }
+    <!-- 其他信息 -->
+    <section class="card">
+      <h2>其他信息</h2>
+      <div class="grid-2">
+        <div class="row">
+          <label>备注</label>
+          <textarea name="remarks" placeholder="如有其他需要说明的事项，请在此填写"></textarea>
+        </div>
+        <div class="row">
+          <label>紧急联系人姓名</label>
+          <input type="text" name="emergency_name" id="emergency_name">
+        </div>
+        <div class="row">
+          <label>紧急联系人电话</label>
+          <input type="text" name="emergency_phone" id="emergency_phone">
+        </div>
+      </div>
+    </section>
 
-                    const s = data.data.review_status;
-                    let badgeClass = 'badge';
-                    if (s.includes('待') || s.toLowerCase() === 'pending') badgeClass += ' badge-pending';
-                    else if (s.includes('通') || s.toLowerCase() === 'approved') badgeClass += ' badge-approved';
-                    else if (s.includes('拒') || s.toLowerCase() === 'rejected') badgeClass += ' badge-rejected';
+    <div class="submit-wrap">
+      <button class="btn" type="submit">提交申请</button>
+    </div>
+  </form>
 
-                    box.innerHTML = `
-                        <div class="status-row"><span class="muted">姓名</span><strong>${data.data.name}</strong></div>
-                        <div class="status-row"><span class="muted">活动名称</span><strong>${data.data.event_name || '-'}</strong></div>
-                        <div class="status-row"><span class="muted">审核状态</span><span class="${badgeClass}">${s}</span></div>
-                        <div class="status-row"><span class="muted">审核说明</span><strong>${data.data.review_comment || '无'}</strong></div>
-                        <div class="muted" style="margin-top:6px;">以上结果为最新状态，如信息不符，请联系管理员核实。</div>
-                    `;
-                } catch (err) {
-                    box.style.display='block'; box.textContent='网络或服务器异常。';
-                }
-            });
-        })();
-    </script>
+  <script>
+    // 查询状态
+    function toggleStatusForm(){
+      const f=document.getElementById('statusForm');
+      f.style.display = (f.style.display==='none'||!f.style.display)?'block':'none';
+    }
+    async function doLookup(){
+      const name = (document.getElementById('status_name').value||'').trim();
+      const box = document.getElementById('statusResult');
+      if(!name){ box.style.display='block'; box.textContent='请输入姓名'; return; }
+      box.style.display='block'; box.textContent='查询中...';
+      try{
+        const res = await fetch(`/check_status_api?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        if(!data || !data.status){ box.textContent='服务器返回异常'; return; }
+        if(data.status==='not_found'){ box.textContent=`未找到【${name}】的申请记录。`; return;}
+        if(data.status==='error'){ box.textContent=data.message||'查询出错'; return;}
+        const s = data.data.review_status || '';
+        box.innerHTML =
+          `<div class="status-row"><span class="muted">姓名</span><b>${data.data.name}</b></div>
+           <div class="status-row"><span class="muted">活动名称</span><b>${data.data.event_name||'-'}</b></div>
+           <div class="status-row"><span class="muted">审核状态</span><span class="badge">${s}</span></div>
+           <div class="status-row"><span class="muted">审核说明</span><b>${data.data.review_comment||'无'}</b></div>`;
+      }catch(e){ box.textContent='网络或服务器异常';}
+    }
+
+    // 器材：勾选→显示数量，并在勾选时把数量设为 required
+    (function initEquip(){
+      const ids = {{ equip_map.keys()|list|tojson }};
+      ids.forEach(k=>{
+        const cb = document.getElementById(`equip_${k}`);
+        const box = document.getElementById(`qty_${k}`);
+        const qty = document.querySelector(`input[name="equip_${k}_qty"]`);
+        if(!cb||!box||!qty) return;
+        const sync=()=>{
+          if(cb.checked){ box.style.display='flex'; qty.required=true; if(!qty.value) qty.value=1;}
+          else{ box.style.display='none'; qty.required=false; }
+        };
+        cb.addEventListener('change', sync);
+        sync();
+      });
+    })();
+
+    // 感恩奉献：勾选→显示金额+方式，并设置 required
+    (function initDonation(){
+      const consent = document.getElementById('donation_consent');
+      const block = document.getElementById('donation_block');
+      const amount = document.getElementById('donation_amount');
+      const method = document.getElementById('donation_method');
+      const sync=()=>{
+        const on = consent.checked;
+        block.style.display = on ? 'grid' : 'none';
+        amount.required = on;
+        method.required = on;
+        if(!on){ amount.value=''; method.value=''; }
+      };
+      consent.addEventListener('change', sync);
+      sync();
+    })();
+
+    // 轻量校验：紧急联系人不要与本人完全相同
+    document.getElementById('mainForm').addEventListener('submit', function(e){
+      const name = (this.querySelector('input[name="name"]').value||'').trim();
+      const phone = (this.querySelector('input[name="phone"]').value||'').trim();
+      const en = (document.getElementById('emergency_name').value||'').trim();
+      const ep = (document.getElementById('emergency_phone').value||'').trim();
+      if(en && en===name){ e.preventDefault(); alert("⚠️ 紧急联系人姓名要与申请人姓名不一致"); }
+      else if(ep && ep===phone){ e.preventDefault(); alert("⚠️ 紧急联系人电话要与申请人联系电话不一致"); }
+    });
+  </script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import traceback
 import os
 from functools import wraps
 from datetime import datetime
+import ssl
 
 app = Flask(__name__)
 
@@ -22,11 +23,25 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT   = int(os.getenv("SMTP_PORT", "587"))
 SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "qinmo840@gmail.com")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre")
+SENDER_PASSWORD = (os.getenv("SENDER_PASSWORD", "izbw wime pzgn fyre") or "").replace(" ", "")
 ADMIN_EMAIL     = os.getenv("ADMIN_EMAIL", "lausukyork9@gmail.com")
 
 # ========== 数据库路径 ==========
 DB_PATH = os.getenv("DB_PATH", "database.db")
+
+# ========== 器材清单（键 -> 中文名，用于组合字符串）==========
+EQUIP_MAP = {
+    "mic": "麦克风",
+    "amp": "扩音器",
+    "pa": "音响系统",
+    "projector": "投影机",
+    "screen": "投影屏幕",
+    "ext": "延长线",
+    "table": "桌子",
+    "chair": "椅子",
+    "podium": "讲台",
+    "hdmi": "HDMI线",
+}
 
 # ===== 稳健版邮件发送函数（返回 (ok, err)）=====
 def send_email(subject, content, to_email):
@@ -38,7 +53,8 @@ def send_email(subject, content, to_email):
 
     # 先尝试 SSL:465
     try:
-        server = smtplib.SMTP_SSL(SMTP_SERVER, 465, timeout=20)
+        context = ssl.create_default_context()
+        server = smtplib.SMTP_SSL(SMTP_SERVER, 465, context=context, timeout=20)
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
         server.quit()
@@ -51,7 +67,7 @@ def send_email(subject, content, to_email):
     # 回退 TLS:587
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=20)
-        server.ehlo(); server.starttls(); server.ehlo()
+        server.ehlo(); server.starttls(context=ssl.create_default_context()); server.ehlo()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
         server.quit()
@@ -158,13 +174,34 @@ def logout():
 # ========================
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # 传给模板，按你的排版生成器材选项
+    return render_template("index.html", equip_map=EQUIP_MAP)
 
 @app.route("/submit", methods=["POST"])
 def submit():
     data = request.form.to_dict(flat=True)
-    checklist = request.form.getlist("equipment")
-    equipment_str = ", ".join(checklist) if checklist else ""
+
+    # 1) 器材：勾选才读取数量，拼成 “中文名x数量”
+    equip_items = []
+    for key, cname in EQUIP_MAP.items():
+        if data.get(f"equip_{key}") == "on":
+            qty_str = (data.get(f"equip_{key}_qty") or "").strip()
+            try:
+                qty = int(qty_str)
+            except:
+                qty = 0
+            if qty <= 0:
+                qty = 1
+            equip_items.append(f"{cname}x{qty}")
+    equipment_str = ", ".join(equip_items)
+
+    # 2) 感恩奉献：勾选才保存金额与方式（金额写进 donation 字段）
+    if data.get("donation_consent") == "on":
+        donation_val = (data.get("donation_amount") or "").strip()
+        donation_method = (data.get("donation_method") or "").strip()
+    else:
+        donation_val = ""
+        donation_method = ""
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -181,7 +218,7 @@ def submit():
         data.get('event_name'), data.get('start_date'), data.get('start_time'),
         data.get('end_date'), data.get('end_time'), data.get('location'),
         data.get('event_type'), data.get('participants'), equipment_str,
-        data.get('special_request'), data.get('donation'), data.get('donation_method'),
+        data.get('special_request'), donation_val, donation_method,
         data.get('remarks'), data.get('emergency_name'), data.get('emergency_phone')
     ))
     conn.commit(); conn.close()
@@ -193,7 +230,7 @@ def submit():
     return "提交成功！我们会尽快处理您的申请。"
 
 # ========================
-# 管理页 + 接口
+# 管理页 + 接口（保持不变）
 # ========================
 @app.route("/admin")
 @login_required
