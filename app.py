@@ -17,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "replace-this-in-prod")
 
 # 直接使用固定密码（不再被环境变量覆盖）
-ADMIN_PASSWORD = "maslandit33918"
+ADMIN_PASSWORD = "maslandit339188"
 print(">>> ADMIN_PASSWORD source: CODE")
 
 # ========== 邮件配置（记得用应用专用密码）==========
