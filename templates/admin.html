@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>管理审核 - 福源堂器材外借</title>
 
+<!-- 强制禁用缓存，防止回退或刷新后看到旧页面 -->
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -41,11 +42,11 @@
 
   table { border-collapse: separate; border-spacing:0; white-space: nowrap; }
   thead th{ position:sticky; top:0; background:#f3f4f6; z-index:1; font-weight:700; font-size:14px; text-align:left; padding:14px 12px; border-bottom:1px solid var(--line); }
-  tbody td{ font-size:15px; padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top; max-width: 400px; overflow:hidden; text-overflow: ellipsis; }
+  tbody td{ font-size:15px; padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top; max-width: 420px; overflow:hidden; text-overflow: ellipsis; }
   tbody tr:nth-child(odd){ background:#fbfdff; }
   tbody tr:hover{ background:#f8fafc; }
 
-  /* ✅ 器材列：一行一个 */
+  /* 器材列：每行一条 */
   .td-equipment { white-space: normal; max-width: 360px; line-height: 1.45; }
   .equip-lines{ display:block; }
   .equip-line{ display:block; }
@@ -159,6 +160,7 @@
   </div>
 
 <script>
+/* ---------- 工具 ---------- */
 async function handleJsonResponse(resp) {
   const text = await resp.text();
   try { return JSON.parse(text); } catch (_) { return { success:false, message: text || '非JSON响应' }; }
@@ -187,7 +189,7 @@ function renderStatusCell(cell, id, status, review_comment){
   cell.innerHTML = `<span class="${cls}">${st}</span>${comment}${tipHTML}`;
 }
 
-/* ✅ 行状态回填 */
+/* ---------- 行状态回填：确保始终是数据库里的最终值 ---------- */
 function refreshRowStatus(id){
   fetch(`/api/submission/${id}`, { credentials: "same-origin" })
     .then(handleJsonResponse)
@@ -208,12 +210,13 @@ function hydrateAllRows(){
   });
 }
 
-/* ✅ 器材列：一行一个（名称 与 “x数量”之间有空格） */
+/* ---------- 器材列：每行一条（名称 与 “x数量”之间留空格） ---------- */
 function beautifyEquipment(){
   const cells = document.querySelectorAll('.raw-equip');
   cells.forEach(td=>{
     const raw = (td.textContent || '').trim();
     if (!raw){ td.innerHTML = ''; return; }
+    // 允许英文逗号、中文逗号或换行分隔
     const parts = raw.split(/[,，\n]+/).map(s=>s.trim()).filter(Boolean);
     const lines = parts.map(p=>{
       const m = p.match(/^(.+?)x\s*(\d+)$/i);
@@ -227,7 +230,7 @@ function beautifyEquipment(){
   });
 }
 
-/* 审核与邮件与删除：保持你的原有逻辑 */
+/* ---------- 审核操作 ---------- */
 function updateStatus(id, statusText) {
   const comment = document.getElementById(`comment-${id}`).value || "";
   if (!confirm(`确认将编号 ${id} 设置为「${statusText}」吗？`)) return;
@@ -254,6 +257,7 @@ function updateStatus(id, statusText) {
       alert("网络或服务器异常");
     });
 }
+
 function sendReviewEmail(id) {
   if (!confirm(`确认向该申请的邮箱发送当前审核结果和说明吗？`)) return;
   const btn = document.getElementById(`mailbtn-${id}`);
@@ -277,6 +281,7 @@ function sendReviewEmail(id) {
       alert("网络或服务器异常");
     });
 }
+
 function deleteSubmission(id){
   if (!confirm(`确认删除编号 ${id} 这条记录吗？此操作不可撤销。`)) return;
   fetch(`/delete_submission/${id}`, { method: "POST", credentials: "same-origin" })
@@ -298,14 +303,14 @@ function deleteSubmission(id){
     });
 }
 
-/* 强制刷新（带时间戳） */
+/* ---------- 强制刷新（带时间戳，避开缓存） ---------- */
 function hardReload(){
   const url = new URL(window.location.href);
   url.searchParams.set('ts', Date.now().toString());
   window.location.replace(url.toString());
 }
 
-/* 自动刷新（30s） */
+/* ---------- 自动刷新控制（默认 30s） ---------- */
 let autoTimer = null;
 function startAutoRefresh(){
   stopAutoRefresh();
@@ -315,10 +320,10 @@ function stopAutoRefresh(){
   if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
 }
 
-/* 初始挂载 */
+/* ---------- 初始挂载 ---------- */
 document.addEventListener('DOMContentLoaded', ()=>{
-  beautifyEquipment();
-  hydrateAllRows();
+  beautifyEquipment();   // 器材列渲染为每行一条
+  hydrateAllRows();      // 每行状态以数据库最终值为准
 
   const toggle = document.getElementById('autoRefreshToggle');
   if (toggle){
@@ -327,7 +332,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 });
 
-/* 处理 bfcache：后退返回旧页时强刷 */
+/* 处理浏览器回退缓存（bfcache）：若来自缓存，强制刷新为最新页面 */
 window.addEventListener('pageshow', function (e) {
   if (e.persisted) { hardReload(); }
 });
