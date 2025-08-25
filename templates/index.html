@@ -5,21 +5,14 @@
   <title>福源堂器材外借申请</title>
   <link rel="stylesheet" href="/static/style.css">
   <style>
-    /* 颜色与基础 */
     :root{
       --card:#fff; --bd:#e5e5e5; --muted:#666;
       --primary:#0a58ff; --shadow:rgba(0,0,0,.12);
     }
-
-    /* 页面主体：输入框不强制微软雅黑；非输入类文本统一微软雅黑 */
     body{background:#f7f7f7;color:#000;padding:24px;}
     h1,h2,h3,label,.muted,.tabs button,.nav-title{font-family:"Microsoft YaHei","微软雅黑",sans-serif;}
-
-    /* 标题样式（更大、更粗） */
     h1{font-size:32px;font-weight:900;text-align:center;margin:0 0 6px}
     h3{font-size:16px;text-align:center;margin:0 0 18px;color:#444;font-weight:700}
-
-    /* 顶部切换按钮（立体） */
     .tabs{display:flex;justify-content:center;gap:14px;margin:10px 0 22px}
     .btn-tab{
       position:relative; padding:10px 18px; border-radius:12px; border:1px solid var(--bd);
@@ -29,31 +22,20 @@
     }
     .btn-tab:hover{transform:translateY(-1px); box-shadow:0 4px 0 #c5ceff,0 10px 18px var(--shadow);}
     .btn-tab:active{transform:translateY(2px); box-shadow:0 1px 0 #c5ceff,0 4px 10px var(--shadow);}
-
-    /* 卡片排版 */
     form{max-width:1000px;margin:0 auto}
     .card{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:0 6px 16px var(--shadow)}
     .card h2{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900;margin:0 0 12px}
-
-    /* 图标（可爱风） */
     .icon{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
-
-    /* 表单网格 */
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-
-    /* 行与控件 */
     .row{display:flex;flex-direction:column;gap:6px}
     .row label{font-weight:800}
     input[type="text"],input[type="email"],input[type="tel"],input[type="date"],
     input[type="time"],input[type="number"],select,textarea{
       padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;outline:none;
-      /* 输入框不强制微软雅黑，保留用户系统字体 */
       font-family:inherit;
     }
     textarea{resize:vertical;min-height:90px}
-
-    /* 器材九宫格 */
     .equip-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .select-all{display:flex;align-items:center;gap:8px;font-weight:800}
     .equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -62,8 +44,6 @@
     .qty{display:none;align-items:center;gap:6px}
     .qty input{width:72px;text-align:center}
     .muted{color:var(--muted);font-size:13px}
-
-    /* 提交按钮（立体） */
     .submit-wrap{text-align:center;margin-top:14px}
     .btn-submit{
       padding:12px 22px;border:none;border-radius:12px;background:var(--primary);color:#fff;
@@ -73,8 +53,6 @@
     }
     .btn-submit:hover{transform:translateY(-1px); box-shadow:0 5px 0 #063fc7,0 12px 20px var(--shadow);}
     .btn-submit:active{transform:translateY(2px); box-shadow:0 2px 0 #063fc7,0 6px 12px var(--shadow);}
-
-    /* 查询状态卡片 */
     #statusForm{max-width:520px;margin:0 auto 18px;display:none}
     .status-card{max-width:520px;margin:12px auto 0;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--bd)}
     .status-row{display:flex;justify-content:space-between;margin:6px 0}
@@ -93,8 +71,7 @@
   <!-- 查询状态表单 -->
   <form id="statusForm" class="card" onsubmit="return false">
     <h2>
-      <span class="icon" aria-hidden="true">
-        <!-- 放大镜可爱图标 -->
+      <span class="icon">
         <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
           <circle cx="11" cy="11" r="7" stroke="#333" stroke-width="2"/>
           <path d="M20 20l-3.2-3.2" stroke="#333" stroke-width="2" stroke-linecap="round"/>
@@ -106,118 +83,51 @@
       <label for="status_name">姓名 *</label>
       <input type="text" id="status_name" required>
     </div>
-    <div class="submit-wrap" style="margin-top:10px">
-      <button class="btn-submit" type="button" onclick="doLookup()">查询</button>
-    </div>
+    <div class="submit-wrap"><button class="btn-submit" type="button" onclick="doLookup()">查询</button></div>
     <div id="statusResult" class="status-card" style="display:none;"></div>
   </form>
 
+  <!-- 主表单 -->
   <form action="/submit" method="post" id="mainForm">
     <!-- 申请人信息 -->
     <section class="card">
-      <h2>
-        <span class="icon" aria-hidden="true">
-          <!-- 可爱头像 -->
-          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-            <circle cx="12" cy="8" r="4" stroke="#333" stroke-width="2"/>
-            <path d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" stroke="#333" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </span>
-        申请人信息
-      </h2>
+      <h2><span class="icon">👤</span>申请人信息</h2>
       <div class="grid-2">
-        <div class="row">
-          <label>姓名 *</label>
-          <input type="text" name="name" required>
-        </div>
-        <div class="row">
-          <label>联系电话 *</label>
-          <input type="tel" name="phone" required>
-        </div>
-        <div class="row">
-          <label>电子邮箱 *</label>
-          <input type="email" name="email" required>
-        </div>
-        <div class="row">
-          <label>所属团契/小组 *</label>
-          <input type="text" name="group" required>
-        </div>
+        <div class="row"><label>姓名 *</label><input type="text" name="name" required></div>
+        <div class="row"><label>联系电话 *</label><input type="tel" name="phone" required></div>
+        <div class="row"><label>电子邮箱 *</label><input type="email" name="email" required></div>
+        <div class="row"><label>所属团契/小组 *</label><input type="text" name="group" required></div>
       </div>
     </section>
 
     <!-- 活动信息 -->
     <section class="card">
-      <h2>
-        <span class="icon" aria-hidden="true">
-          <!-- 可爱日历 -->
-          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-            <rect x="3" y="5" width="18" height="16" rx="2" stroke="#333" stroke-width="2"/>
-            <path d="M8 3v4M16 3v4M3 9h18" stroke="#333" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </span>
-        活动信息
-      </h2>
+      <h2><span class="icon">📅</span>活动信息</h2>
       <div class="grid-2">
-        <div class="row">
-          <label>活动名称 *</label>
-          <input type="text" name="event_name" required>
-        </div>
-        <div class="row">
-          <label>活动地点 *</label>
-          <input type="text" name="location" required>
-        </div>
-        <div class="row">
-          <label>开始日期 *</label>
-          <input type="date" name="start_date" required>
-        </div>
-        <div class="row">
-          <label>开始时间 *</label>
-          <input type="time" name="start_time" required>
-        </div>
-        <div class="row">
-          <label>结束日期 *</label>
-          <input type="date" name="end_date" required>
-        </div>
-        <div class="row">
-          <label>结束时间 *</label>
-          <input type="time" name="end_time" required>
-        </div>
-        <div class="row">
-          <label>活动性质 *</label>
+        <div class="row"><label>活动名称 *</label><input type="text" name="event_name" required></div>
+        <div class="row"><label>活动地点 *</label><input type="text" name="location" required></div>
+        <div class="row"><label>开始日期 *</label><input type="date" name="start_date" required></div>
+        <div class="row"><label>开始时间 *</label><input type="time" name="start_time" required></div>
+        <div class="row"><label>结束日期 *</label><input type="date" name="end_date" required></div>
+        <div class="row"><label>结束时间 *</label><input type="time" name="end_time" required></div>
+        <div class="row"><label>活动性质 *</label>
           <select name="event_type" required>
             <option value="">请选择活动性质</option>
             <option value="内部">内部</option>
             <option value="外借">外借</option>
           </select>
         </div>
-        <div class="row">
-          <label>预计参与人数 *</label>
-          <input type="number" name="participants" min="1" step="1" required>
-        </div>
+        <div class="row"><label>预计参与人数 *</label><input type="number" name="participants" min="1" step="1" required></div>
       </div>
     </section>
 
     <!-- 器材需求 -->
     <section class="card">
-      <h2>
-        <span class="icon" aria-hidden="true">
-          <!-- 可爱工具箱 -->
-          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-            <rect x="3" y="8" width="18" height="11" rx="2" stroke="#333" stroke-width="2"/>
-            <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="#333" stroke-width="2" />
-          </svg>
-        </span>
-        器材需求
-      </h2>
-
+      <h2><span class="icon">🛠</span>器材需求</h2>
       <div class="equip-head">
         <div class="muted">请选择需要的器材，勾选后可填写数量</div>
-        <label class="select-all">
-          <input type="checkbox" id="equip_select_all">
-          全选器材
-        </label>
+        <label class="select-all"><input type="checkbox" id="equip_select_all">全选器材</label>
       </div>
-
       <div class="equip-grid">
         {% for key, cname in equip_map.items() %}
         <div class="equip-item">
@@ -232,35 +142,18 @@
         </div>
         {% endfor %}
       </div>
-
-      <div class="row" style="margin-top:12px">
-        <label>特殊需求</label>
-        <textarea name="special_request" placeholder="如有特殊器材需求或使用要求，请在此说明"></textarea>
-      </div>
+      <div class="row" style="margin-top:12px"><label>特殊需求</label><textarea name="special_request"></textarea></div>
     </section>
 
     <!-- 感恩奉献 -->
     <section class="card">
-      <h2>
-        <span class="icon" aria-hidden="true">
-          <!-- 可爱爱心 -->
-          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-            <path d="M12 21s-7-4.35-9-7.5C1 10 2.5 7 5.5 7c2 0 3.5 1.5 3.5 1.5S10.5 7 12.5 7C15.5 7 17 10 15 13.5 13 16.65 12 21 12 21z" stroke="#333" stroke-width="2" fill="none"/>
-          </svg>
-        </span>
-        感恩奉献（可选）
-      </h2>
+      <h2><span class="icon">❤️</span>感恩奉献（可选）</h2>
       <label style="display:flex;align-items:center;gap:8px;font-weight:800">
-        <input type="checkbox" id="donation_consent" name="donation_consent">
-        我愿意为此次器材使用献上感恩奉献
+        <input type="checkbox" id="donation_consent" name="donation_consent">我愿意为此次器材使用献上感恩奉献
       </label>
       <div class="grid-3" id="donation_block" style="margin-top:10px;display:none">
-        <div class="row">
-          <label>奉献金额（RM） *</label>
-          <input type="number" id="donation_amount" name="donation_amount" min="1" step="1" placeholder="请输入金额">
-        </div>
-        <div class="row">
-          <label>奉献方式 *</label>
+        <div class="row"><label>奉献金额（RM） *</label><input type="number" id="donation_amount" name="donation_amount" min="1" step="1"></div>
+        <div class="row"><label>奉献方式 *</label>
           <select id="donation_method" name="donation_method">
             <option value="">-- 请选择 --</option>
             <option value="现金">现金</option>
@@ -273,122 +166,70 @@
 
     <!-- 其他信息 -->
     <section class="card">
-      <h2>
-        <span class="icon" aria-hidden="true">
-          <!-- 信息小i -->
-          <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-            <circle cx="12" cy="12" r="9" stroke="#333" stroke-width="2"/>
-            <path d="M12 8.5v.01M12 11v5" stroke="#333" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </span>
-        其他信息
-      </h2>
+      <h2><span class="icon">ℹ️</span>其他信息</h2>
       <div class="grid-2">
-        <div class="row">
-          <label>备注</label>
-          <textarea name="remarks" placeholder="如有其他需要说明的事项，请在此填写"></textarea>
-        </div>
-        <div class="row">
-          <label>紧急联系人姓名</label>
-          <input type="text" name="emergency_name" id="emergency_name">
-        </div>
-        <div class="row">
-          <label>紧急联系人电话</label>
-          <input type="text" name="emergency_phone" id="emergency_phone">
-        </div>
+        <div class="row"><label>备注</label><textarea name="remarks"></textarea></div>
+        <div class="row"><label>紧急联系人姓名</label><input type="text" name="emergency_name" id="emergency_name"></div>
+        <div class="row"><label>紧急联系人电话</label><input type="text" name="emergency_phone" id="emergency_phone"></div>
       </div>
     </section>
-
-    <div class="submit-wrap">
-      <button class="btn-submit" type="submit">提交申请</button>
-    </div>
+    <div class="submit-wrap"><button class="btn-submit" type="submit">提交申请</button></div>
   </form>
 
-  <script>
-    // 显示/隐藏查询状态表单
-    function toggleStatusForm(){
-      const f=document.getElementById('statusForm');
-      f.style.display = (f.style.display==='none'||!f.style.display)?'block':'none';
-    }
-
-    // 查询状态
-    async function doLookup(){
-      const name = (document.getElementById('status_name').value||'').trim();
-      const box = document.getElementById('statusResult');
-      if(!name){ box.style.display='block'; box.textContent='请输入姓名'; return; }
-      box.style.display='block'; box.textContent='查询中...';
-      try{
-        const res = await fetch(`/check_status_api?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
-        if(!data || !data.status){ box.textContent='服务器返回异常'; return; }
-        if(data.status==='not_found'){ box.textContent=`未找到【${name}】的申请记录。`; return;}
-        if(data.status==='error'){ box.textContent=data.message||'查询出错'; return;}
-        const s = data.data.review_status || '';
-        box.innerHTML =
-          `<div class="status-row"><span class="muted">姓名</span><b>${data.data.name}</b></div>
-           <div class="status-row"><span class="muted">活动名称</span><b>${data.data.event_name||'-'}</b></div>
-           <div class="status-row"><span class="muted">审核状态</span><span class="badge">${s}</span></div>
-           <div class="status-row"><span class="muted">审核说明</span><b>${data.data.review_comment||'无'}</b></div>`;
-      }catch(e){ box.textContent='网络或服务器异常';}
-    }
-
-    // 器材：勾选→显示数量；新增“全选器材”
-    (function initEquip(){
-      const ids = {{ equip_map.keys()|list|tojson }};
-      const allBox = document.getElementById('equip_select_all');
-
-      function syncOne(k){
-        const cb = document.getElementById(`equip_${k}`);
-        const box = document.getElementById(`qty_${k}`);
-        const qty = document.querySelector(`input[name="equip_${k}_qty"]`);
-        if(!cb||!box||!qty) return;
-        if(cb.checked){ box.style.display='flex'; qty.required=true; if(!qty.value) qty.value=1;}
-        else{ box.style.display='none'; qty.required=false; }
-      }
-
-      // 单个监听
-      ids.forEach(k=>{
-        const cb = document.getElementById(`equip_${k}`);
-        if(cb){ cb.addEventListener('change', ()=>syncOne(k)); syncOne(k); }
-      });
-
-      // 全选
-      if(allBox){
-        allBox.addEventListener('change', ()=>{
-          const on = allBox.checked;
-          ids.forEach(k=>{
-            const cb = document.getElementById(`equip_${k}`);
-            if(cb){ cb.checked = on; syncOne(k); }
-          });
-        });
-      }
-    })();
-
-    // 感恩奉献：勾选→显示金额+方式，并设置 required
-    (function initDonation(){
-      const consent = document.getElementById('donation_consent');
-      const block = document.getElementById('donation_block');
-      const amount = document.getElementById('donation_amount');
-      const method = document.getElementById('donation_method');
-      const sync=()=>{
-        const on = consent.checked;
-        block.style.display = on ? 'grid' : 'none';
-        amount.required = on; method.required = on;
-        if(!on){ amount.value=''; method.value=''; }
-      };
-      consent.addEventListener('change', sync);
-      sync();
-    })();
-
-    // 轻量校验：紧急联系人不要与本人完全相同
-    document.getElementById('mainForm').addEventListener('submit', function(e){
-      const name = (this.querySelector('input[name="name"]').value||'').trim();
-      const phone = (this.querySelector('input[name="phone"]').value||'').trim();
-      const en = (document.getElementById('emergency_name').value||'').trim();
-      const ep = (document.getElementById('emergency_phone').value||'').trim();
-      if(en && en===name){ e.preventDefault(); alert("⚠️ 紧急联系人姓名要与申请人姓名不一致"); }
-      else if(ep && ep===phone){ e.preventDefault(); alert("⚠️ 紧急联系人电话要与申请人联系电话不一致"); }
-    });
-  </script>
+<script>
+function toggleStatusForm(){
+  const f=document.getElementById('statusForm');
+  f.style.display=(f.style.display==='none'||!f.style.display)?'block':'none';
+}
+async function doLookup(){
+  const name=(document.getElementById('status_name').value||'').trim();
+  const box=document.getElementById('statusResult');
+  if(!name){ box.style.display='block'; box.textContent='请输入姓名'; return; }
+  box.style.display='block'; box.textContent='查询中...';
+  try{
+    const res=await fetch(`/check_status_api?name=${encodeURIComponent(name)}`);
+    const data=await res.json();
+    if(!data||!data.status){ box.textContent='服务器返回异常'; return; }
+    if(data.status==='not_found'){ box.textContent=`未找到【${name}】的申请记录。`; return;}
+    if(data.status==='error'){ box.textContent=data.message||'查询出错'; return;}
+    const s=data.data.review_status||'';
+    box.innerHTML=
+      `<div class="status-row"><span class="muted">姓名</span><b>${data.data.name}</b></div>
+       <div class="status-row"><span class="muted">活动名称</span><b>${data.data.event_name||'-'}</b></div>
+       <div class="status-row"><span class="muted">审核状态</span><span class="badge">${s}</span></div>
+       <div class="status-row"><span class="muted">审核说明</span><b>${data.data.review_comment||'无'}</b></div>`;
+  }catch(e){ box.textContent='网络或服务器异常'; }
+}
+(function initEquip(){
+  const ids={{ equip_map.keys()|list|tojson }};
+  const allBox=document.getElementById('equip_select_all');
+  function syncOne(k){
+    const cb=document.getElementById(`equip_${k}`);
+    const box=document.getElementById(`qty_${k}`);
+    const qty=document.querySelector(`input[name="equip_${k}_qty"]`);
+    if(!cb||!box||!qty) return;
+    if(cb.checked){ box.style.display='flex'; qty.required=true; if(!qty.value) qty.value=1;}
+    else{ box.style.display='none'; qty.required=false; }
+  }
+  ids.forEach(k=>{const cb=document.getElementById(`equip_${k}`);if(cb){cb.addEventListener('change',()=>syncOne(k));syncOne(k);}});
+  if(allBox){allBox.addEventListener('change',()=>{const on=allBox.checked;ids.forEach(k=>{const cb=document.getElementById(`equip_${k}`);if(cb){cb.checked=on;syncOne(k);}});});}
+})();
+(function initDonation(){
+  const consent=document.getElementById('donation_consent');
+  const block=document.getElementById('donation_block');
+  const amount=document.getElementById('donation_amount');
+  const method=document.getElementById('donation_method');
+  const sync=()=>{const on=consent.checked;block.style.display=on?'grid':'none';amount.required=on;method.required=on;if(!on){amount.value='';method.value='';}};
+  consent.addEventListener('change',sync); sync();
+})();
+document.getElementById('mainForm').addEventListener('submit',function(e){
+  const name=(this.querySelector('input[name="name"]').value||'').trim();
+  const phone=(this.querySelector('input[name="phone"]').value||'').trim();
+  const en=(document.getElementById('emergency_name').value||'').trim();
+  const ep=(document.getElementById('emergency_phone').value||'').trim();
+  if(en&&en===name){ e.preventDefault(); alert("⚠️ 紧急联系人姓名要与申请人姓名不一致"); }
+  else if(ep&&ep===phone){ e.preventDefault(); alert("⚠️ 紧急联系人电话要与申请人联系电话不一致"); }
+});
+</script>
 </body>
 </html>
