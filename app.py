@@ -265,6 +265,32 @@ def download(submission_id):
     file_path = f"submission_{submission_id}.docx"; doc.save(file_path)
     return send_file(file_path, as_attachment=True)
 
+# ========================
+# 🔎 查询状态 API（恢复）
+# ========================
+@app.route("/check_status_api")
+def check_status_api():
+    name = request.args.get("name")
+    if not name:
+        return jsonify({"status": "error", "message": "Name is required"})
+
+    conn = get_conn(); c = conn.cursor()
+    c.execute("SELECT name, event_name, status, review_comment FROM submissions WHERE name=%s ORDER BY id DESC LIMIT 1", (name,))
+    row = c.fetchone(); conn.close()
+
+    if row:
+        return jsonify({
+            "status": row[2],
+            "data": {
+                "name": row[0],
+                "event_name": row[1],
+                "review_status": row[2],
+                "review_comment": row[3] or ""
+            }
+        })
+    else:
+        return jsonify({"status": "not_found"})
+
 @app.route("/_health")
 def _health(): return "ok", 200
 
