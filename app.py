@@ -36,8 +36,10 @@ def get_conn():
 
 # ========== 器材清单 ==========
 EQUIP_MAP = {
-    "mic": "麦克风","amp": "扩音器","pa": "音响系统","projector": "投影机","screen": "投影屏幕",
-    "ext": "延长线","table": "桌子","chair": "椅子","podium": "讲台","hdmi": "HDMI线",
+    "mic": "麦克风", "amp": "扩音器", "pa": "音响系统",
+    "projector": "投影机", "screen": "投影屏幕",
+    "ext": "延长线", "table": "桌子", "chair": "椅子",
+    "podium": "讲台", "hdmi": "HDMI线", "signal": "信号线"  # ✅ 新增信号线
 }
 
 # ===== 邮件发送 =====
@@ -128,11 +130,19 @@ def submit():
     equip_items = []
     for key, cname in EQUIP_MAP.items():
         if data.get(f"equip_{key}") == "on":
-            qty_str = (data.get(f"equip_{key}_qty") or "").strip()
-            try: qty = int(qty_str)
-            except: qty = 0
-            if qty <= 0: qty = 1
-            equip_items.append(f"{cname}x{qty}")
+            if key == "mic":  # ✅ 特殊处理麦克风
+                wireless_qty = int(data.get("equip_mic_wireless_qty") or 0)
+                wired_qty = int(data.get("equip_mic_wired_qty") or 0)
+                if wireless_qty > 0:
+                    equip_items.append(f"{cname}(无线)x{wireless_qty}")
+                if wired_qty > 0:
+                    equip_items.append(f"{cname}(有线)x{wired_qty}")
+            else:
+                qty_str = (data.get(f"equip_{key}_qty") or "").strip()
+                try: qty = int(qty_str)
+                except: qty = 0
+                if qty <= 0: qty = 1
+                equip_items.append(f"{cname}x{qty}")
     equipment_str = ", ".join(equip_items)
 
     conn = get_conn(); c = conn.cursor()
@@ -159,7 +169,6 @@ def submit():
                ADMIN_EMAIL)
 
     return """<html><body><h1>提交成功！</h1><p>请返回首页查询审核状态。</p></body></html>"""
-
 # ========================
 # 管理页 + 接口
 # ========================
